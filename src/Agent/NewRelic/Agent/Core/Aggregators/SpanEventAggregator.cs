@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using NewRelic.Core.Logging;
+using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core.Aggregators
 {
@@ -101,7 +102,7 @@ namespace NewRelic.Agent.Core.Aggregators
             _agentHealthReporter.ReportSpanEventCollected(added);
         }
 
-        protected override void Harvest()
+        protected override async Task HarvestAsync()
         {
             Log.Finest("Span Event harvest starting.");
 
@@ -124,7 +125,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (wireModels.Count <= 0)
                 return;
 
-            var responseStatus = DataTransportService.Send(eventHarvestData, wireModels);
+            var responseStatus = await DataTransportService.SendAsync(eventHarvestData, wireModels);
 
             HandleResponse(responseStatus, wireModels);
 

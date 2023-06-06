@@ -10,6 +10,7 @@ using NewRelic.SystemExtensions.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core.Commands
 {
@@ -29,12 +30,14 @@ namespace NewRelic.Agent.Core.Commands
             _configurationService = configurationService;
             _scheduler = scheduler;
 
-            _scheduler.ExecuteEvery(GetAndExecuteAgentCommands, _configurationService.Configuration.GetAgentCommandsCycle);
+            _scheduler.ExecuteEvery(GetAndExecuteAgentCommandsAction, _configurationService.Configuration.GetAgentCommandsCycle);
         }
+
+        private void GetAndExecuteAgentCommandsAction() => Task.Run(GetAndExecuteAgentCommandsAsync).GetAwaiter().GetResult();
 
         public override void Dispose()
         {
-            _scheduler.StopExecuting(GetAndExecuteAgentCommands);
+            _scheduler.StopExecuting(GetAndExecuteAgentCommandsAction);
         }
 
         public void AddCommands(params ICommand[] commands)
@@ -48,14 +51,14 @@ namespace NewRelic.Agent.Core.Commands
             }
         }
 
-        private void GetAndExecuteAgentCommands()
+        private async Task GetAndExecuteAgentCommandsAsync()
         {
-            var commands = _dataTransportService.GetAgentCommands();
+            var commands = await _dataTransportService.GetAgentCommandsAsync();
             var commandResults = ProcessCommands(commands);
             if (commandResults.Count < 1)
                 return;
 
-            _dataTransportService.SendCommandResults(commandResults);
+            await _dataTransportService.SendCommandResultsAsync(commandResults);
         }
 
         public IDictionary<string, object> ProcessCommands(IEnumerable<CommandModel> commandModels)

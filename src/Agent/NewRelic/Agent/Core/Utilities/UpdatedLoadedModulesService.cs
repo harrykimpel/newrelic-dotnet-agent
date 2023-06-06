@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using NewRelic.Agent.Configuration;
 using NewRelic.Agent.Core.DataTransport;
 using NewRelic.Agent.Core.Time;
@@ -24,10 +25,12 @@ namespace NewRelic.Agent.Core.Utilities
             _configurationService = configurationService;
             _dataTransportService = dataTransportService;
             _scheduler = scheduler;
-            _scheduler.ExecuteEvery(GetLoadedModules, _configuration.UpdateLoadedModulesCycle);
+            _scheduler.ExecuteEvery(GetLoadedModulesAction, _configuration.UpdateLoadedModulesCycle);
         }
 
-        private void GetLoadedModules()
+        private void GetLoadedModulesAction() => Task.Run(GetLoadedModules).GetAwaiter().GetResult();
+
+        private async Task GetLoadedModules()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(assembly => assembly != null)
@@ -44,12 +47,12 @@ namespace NewRelic.Agent.Core.Utilities
 
             var loadedModulesCollection = LoadedModuleWireModelCollection.Build(assemblies);
 
-            SendUpdatedLoadedModules(loadedModulesCollection);
+            await SendUpdatedLoadedModulesAsync(loadedModulesCollection).ConfigureAwait(false);
         }
 
-        private void SendUpdatedLoadedModules(LoadedModuleWireModelCollection loadedModulesCollection)
+        private async Task SendUpdatedLoadedModulesAsync(LoadedModuleWireModelCollection loadedModulesCollection)
         {
-            var responseStatus = _dataTransportService.Send(loadedModulesCollection);
+            var responseStatus = await _dataTransportService.SendAsync(loadedModulesCollection);
             if (responseStatus != DataTransportResponseStatus.RequestSuccessful)
             {
                 // Try again next time

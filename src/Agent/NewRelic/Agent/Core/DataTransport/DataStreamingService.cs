@@ -45,7 +45,7 @@ namespace NewRelic.Agent.Core.DataTransport
             _healthReporter = agentHealthReporter;
         }
 
-        private async Task<int> WaitForResponse()
+        private async Task<int> WaitForResponseAsync()
         {
             var success = false;
             try
@@ -88,9 +88,9 @@ namespace NewRelic.Agent.Core.DataTransport
             return ConsumerID;
         }
 
-        public Task<int> GetAwaiter()
+        public Task<int> GetAwaiterAsync()
         {
-            return _task ?? (_task = WaitForResponse());
+            return _task ?? (_task = WaitForResponseAsync());
         }
 
         public TResponse RetrieveResponse()
@@ -456,7 +456,7 @@ namespace NewRelic.Agent.Core.DataTransport
 
                 var tasksToWaitFor = _responseStreamsDic.Values
                     .Where(x => !x.IsInvalid)
-                    .Select(x => x.GetAwaiter())
+                    .Select(x => x.GetAwaiterAsync())
                     .ToArray();
 
                 if (tasksToWaitFor.Length == 0)
@@ -521,12 +521,16 @@ namespace NewRelic.Agent.Core.DataTransport
             }
 
             _responseStreamsDic.Clear();
+#pragma warning disable VSTHRD110
             Task.Run(() => ManageResponseStreams(CancellationToken));
+#pragma warning restore VSTHRD110
 
             //Start up the workers
             for (var i = 0; i < _configuration.InfiniteTracingTraceCountConsumers; i++)
             {
+#pragma warning disable VSTHRD110
                 Task.Run(() => ExecuteConsumer(_collection));
+#pragma warning restore VSTHRD110
             }
 
             CancellationToken.WaitHandle.WaitOne();
@@ -800,10 +804,12 @@ namespace NewRelic.Agent.Core.DataTransport
                 return;
             }
 
+#pragma warning disable VSTHRD110 // Observe result of async calls
             Task.Run(() =>
             {
                 Restart(collection);
             });
+#pragma warning restore VSTHRD110 // Observe result of async calls
         }
 
         /// <summary>

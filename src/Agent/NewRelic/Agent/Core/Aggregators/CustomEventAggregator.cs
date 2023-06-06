@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core.Aggregators
 {
@@ -65,7 +66,7 @@ namespace NewRelic.Agent.Core.Aggregators
             }
         }
 
-        protected override void Harvest()
+        protected override async Task HarvestAsync()
         {
             Log.Finest("Custom Event harvest starting.");
 
@@ -87,7 +88,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (customEvents.Count <= 0)
                 return;
 
-            var responseStatus = DataTransportService.Send(customEvents);
+            var responseStatus = await DataTransportService.SendAsync(customEvents);
 
             HandleResponse(responseStatus, customEvents);
 
