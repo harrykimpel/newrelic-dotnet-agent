@@ -133,6 +133,12 @@ namespace NewRelic.Agent.IntegrationTestHelpers
                 new[] { "configuration", "browserMonitoring", "attributes" }, "enabled", stringValue);
         }
 
+        public void BrowserMonitoringLoader(string loaderType)
+        {
+            CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath,
+                new[] { "configuration", "browserMonitoring" }, "loader", loaderType);
+        }
+
         public void PutForDataSend()
         {
             CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath, new[] { "configuration", "dataTransmission" },
@@ -167,6 +173,12 @@ namespace NewRelic.Agent.IntegrationTestHelpers
         {
             CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath, new[] { "configuration", "log" }, "level",
                 level);
+        }
+
+        public void LogToConsole()
+        {
+            CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath, new[] { "configuration", "log" }, "console",
+                "true");
         }
 
         public void SetLogDirectory(string directoryName)
@@ -314,6 +326,13 @@ namespace NewRelic.Agent.IntegrationTestHelpers
         {
             CommonUtils.ModifyOrCreateXmlNodeInNewRelicConfig(_configFilePath, new[] { "configuration", "applicationLogging" }, "forwarding", string.Empty);
             CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath, new[] { "configuration", "applicationLogging", "forwarding" }, "maxSamplesStored", samples.ToString());
+            return this;
+        }
+
+        public NewRelicConfigModifier SetLogForwardingLogLevelDenyList(string logLevelDenyList)
+        {
+            CommonUtils.ModifyOrCreateXmlNodeInNewRelicConfig(_configFilePath, new[] { "configuration", "applicationLogging" }, "forwarding", string.Empty);
+            CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath, new[] { "configuration", "applicationLogging", "forwarding" }, "logLevelDenyList", logLevelDenyList);
             return this;
         }
 

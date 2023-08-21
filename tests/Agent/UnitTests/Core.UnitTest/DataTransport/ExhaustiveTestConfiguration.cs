@@ -415,6 +415,8 @@ namespace NewRelic.Agent.Core.DataTransport
 
         public bool LogDecoratorEnabled => true;
 
+        public HashSet<string> LogLevelDenyList => new HashSet<string> { "testlevel1, testlevel2" } ;
+
         public bool AppDomainCachingDisabled => true;
 
         public bool ForceNewTransactionOnNewThread => true;
@@ -440,6 +442,8 @@ namespace NewRelic.Agent.Core.DataTransport
         public TimeSpan SqlTracesHarvestCycle => TimeSpan.FromMinutes(1);
 
         public TimeSpan UpdateLoadedModulesCycle => TimeSpan.FromMinutes(1);
+
+        public TimeSpan StackExchangeRedisCleanupCycle => TimeSpan.FromMinutes(1);
 
         public IReadOnlyDictionary<string, string> GetAppSettings()
         {

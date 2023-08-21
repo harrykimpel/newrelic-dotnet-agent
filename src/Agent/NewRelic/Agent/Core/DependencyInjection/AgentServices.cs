@@ -18,6 +18,8 @@ using NewRelic.Agent.Core.Config;
 using NewRelic.Agent.Core.Configuration;
 using NewRelic.Agent.Core.Database;
 using NewRelic.Agent.Core.DataTransport;
+using NewRelic.Agent.Core.DataTransport.Client;
+using NewRelic.Agent.Core.DataTransport.Client.Interfaces;
 using NewRelic.Agent.Core.DistributedTracing;
 using NewRelic.Agent.Core.Errors;
 using NewRelic.Agent.Core.Instrumentation;
@@ -52,11 +54,7 @@ namespace NewRelic.Agent.Core.DependencyInjection
     {
         public static IContainer GetContainer()
         {
-#if NETFRAMEWORK
-            return new WindsorContainer();
-#else
-            return new CoreContainer();
-#endif
+            return new AgentContainer();
         }
 
         /// <summary>
@@ -72,28 +70,32 @@ namespace NewRelic.Agent.Core.DependencyInjection
             // IWrapper map
             container.RegisterFactory<IEnumerable<IWrapper>>(() => ExtensionsLoader.LoadWrappers());
             container.Register<IWrapperMap, WrapperMap>();
-            container.Register<IHttpClientFactory, HttpClientFactory>();
+#if NETFRAMEWORK
+            container.Register<IHttpClientFactory, WebRequestHttpClientFactory>();
+#else
+            container.Register<IHttpClientFactory, NRHttpClientFactory>();
+#endif
 
             // Other
             container.Register<ICpuSampleTransformer, CpuSampleTransformer>();
-            container.Register<AgentInstallConfiguration.IsWindowsDelegate>(AgentInstallConfiguration.GetIsWindows);
+            container.RegisterInstance<AgentInstallConfiguration.IsWindowsDelegate>(AgentInstallConfiguration.GetIsWindows);
             container.Register<IMemorySampleTransformer, MemorySampleTransformer>();
             container.Register<IThreadStatsSampleTransformer, ThreadStatsSampleTransformer>();
             container.Register<IEnvironment, SystemInterfaces.Environment>();
             container.Register<IAgent, Agent>();
             container.Register<CpuSampler, CpuSampler>();
             container.Register<MemorySampler, MemorySampler>();
-            container.Register<Func<ISampledEventListener<ThreadpoolThroughputEventsSample>>>(() => new ThreadEventsListener());
+            container.RegisterInstance<Func<ISampledEventListener<ThreadpoolThroughputEventsSample>>>(() => new ThreadEventsListener());
             container.Register<ThreadStatsSampler, ThreadStatsSampler>();
             container.Register<IGcSampleTransformer, GcSampleTransformer>();
 #if NETFRAMEWORK
-			container.Register<Func<string, IPerformanceCounterCategoryProxy>>(PerformanceCounterProxyFactory.DefaultCreatePerformanceCounterCategoryProxy);
-			container.Register<Func<string, string, string, IPerformanceCounterProxy>>(PerformanceCounterProxyFactory.DefaultCreatePerformanceCounterProxy);
+			container.RegisterInstance<Func<string, IPerformanceCounterCategoryProxy>>(PerformanceCounterProxyFactory.DefaultCreatePerformanceCounterCategoryProxy);
+			container.RegisterInstance<Func<string, string, string, IPerformanceCounterProxy>>(PerformanceCounterProxyFactory.DefaultCreatePerformanceCounterProxy);
 			container.Register<IPerformanceCounterProxyFactory, PerformanceCounterProxyFactory>();
 			container.Register<GcSampler, GcSampler>();
 #else
-            container.Register<Func<ISampledEventListener<Dictionary<GCSampleType, float>>>>(() => new GCEventsListener());
-            container.Register<Func<GCSamplerNetCore.SamplerIsApplicableToFrameworkResult>>(GCSamplerNetCore.FXsamplerIsApplicableToFrameworkDefault);
+            container.RegisterInstance<Func<ISampledEventListener<Dictionary<GCSampleType, float>>>>(() => new GCEventsListener());
+            container.RegisterInstance<Func<GCSamplerNetCore.SamplerIsApplicableToFrameworkResult>>(GCSamplerNetCore.FXsamplerIsApplicableToFrameworkDefault);
             container.Register<GCSamplerNetCore, GCSamplerNetCore>();
 #endif
 
@@ -116,7 +118,7 @@ namespace NewRelic.Agent.Core.DependencyInjection
             container.Register<IMetricAggregator, MetricAggregator>();
             container.Register<IAllMetricStatsCollection, MetricWireModel>();
             container.Register<IAllMetricStatsCollection, TransactionMetricStatsCollection>();
-            container.Register<Func<MetricWireModel, MetricWireModel, MetricWireModel>>(MetricWireModel.Merge);
+            container.RegisterInstance<Func<MetricWireModel, MetricWireModel, MetricWireModel>>(MetricWireModel.Merge);
             container.Register<ITransactionTraceAggregator, TransactionTraceAggregator>();
             container.Register<ITransactionEventAggregator, TransactionEventAggregator>();
             container.Register<ISqlTraceAggregator, SqlTraceAggregator>();
@@ -136,9 +138,6 @@ namespace NewRelic.Agent.Core.DependencyInjection
             container.Register<IApiSupportabilityMetricCounters, IOutOfBandMetricSource, ApiSupportabilityMetricCounters>();
             container.Register<ICATSupportabilityMetricCounters, IOutOfBandMetricSource, CATSupportabilityMetricCounters>();
             container.Register<IAgentTimerService, AgentTimerService>();
-#if NETFRAMEWORK
-			container.RegisterFactory<IEnumerable<IOutOfBandMetricSource>>(container.ResolveAll<IOutOfBandMetricSource>);
-#endif
             container.Register<IThreadPoolStatic, ThreadPoolStatic>();
             container.Register<ITransactionTransformer, TransactionTransformer>();
             container.Register<ICustomEventTransformer, CustomEventTransformer>();
@@ -157,7 +156,7 @@ namespace NewRelic.Agent.Core.DependencyInjection
             container.Register<ITransactionCollector, SlowestTransactionCollector>();
             container.Register<ITransactionCollector, SyntheticsTransactionCollector>();
             container.Register<ITransactionCollector, KeyTransactionCollector>();
-            container.Register<IEnumerable<ITransactionCollector>>(transactionCollectors);
+            container.RegisterInstance<IEnumerable<ITransactionCollector>>(transactionCollectors);
 
             container.Register<ITransactionAttributeMaker, TransactionAttributeMaker>();
             container.Register<IErrorTraceMaker, ErrorTraceMaker>();
@@ -180,7 +179,7 @@ namespace NewRelic.Agent.Core.DependencyInjection
             container.Register<ILabelsService, LabelsService>();
 
             container.Register<ITransactionService, TransactionService>();
-            container.Register<Func<IAttributeFilter, IAttributeDefinitions>>((filter) => new AttributeDefinitions(filter));
+            container.RegisterInstance<Func<IAttributeFilter, IAttributeDefinitions>>((filter) => new AttributeDefinitions(filter));
             container.Register<IAttributeDefinitionService, AttributeDefinitionService>();
             container.Register<CommandService, CommandService>();
             container.Register<ConfigurationTracker, ConfigurationTracker>();
@@ -203,6 +202,7 @@ namespace NewRelic.Agent.Core.DependencyInjection
                 container.Register<INativeMethods, LinuxNativeMethods>();
             }
             container.Register<NewRelicCore.DistributedTracing.ITracePriorityManager, NewRelicCore.DistributedTracing.TracePriorityManager>();
+            container.Register<NewRelic.Agent.Api.Experimental.ISimpleSchedulingService, SimpleSchedulingService>();
 
             container.Register<UpdatedLoadedModulesService, UpdatedLoadedModulesService>();
 

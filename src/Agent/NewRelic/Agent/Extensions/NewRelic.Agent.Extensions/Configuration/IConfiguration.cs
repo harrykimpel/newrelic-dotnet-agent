@@ -190,6 +190,7 @@ namespace NewRelic.Agent.Configuration
         int LogEventsMaxSamplesStored { get; }
         TimeSpan LogEventsHarvestCycle { get; }
         bool LogDecoratorEnabled { get; }
+        HashSet<string> LogLevelDenyList { get; }
         bool ContextDataEnabled { get; }
         IEnumerable<string> ContextDataInclude { get; }
         IEnumerable<string> ContextDataExclude { get; }
@@ -203,5 +204,6 @@ namespace NewRelic.Agent.Configuration
         TimeSpan DefaultHarvestCycle { get; }
         TimeSpan SqlTracesHarvestCycle { get; }
         TimeSpan UpdateLoadedModulesCycle { get; }
+        TimeSpan StackExchangeRedisCleanupCycle { get; }
     }
 }
