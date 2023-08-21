@@ -127,7 +127,7 @@ namespace NewRelic.Agent.Core.DataTransport
                     try
                     {
                         Log.DebugFormat("Request({0}): Invoking httpClient.SendAsync()", requestGuid);
-                        using (var response = await httpClient.SendAsync(request))
+                        using (var response = await httpClient.SendAsync(request).ConfigureAwait(false))
                         {
                             var responseContent = GetResponseContent(response, requestGuid);
 

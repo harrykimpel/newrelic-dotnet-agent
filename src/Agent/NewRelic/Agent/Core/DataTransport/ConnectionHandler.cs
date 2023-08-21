@@ -77,7 +77,7 @@ namespace NewRelic.Agent.Core.DataTransport
                 ValidateNotBothHsmAndSecurityPolicies(_configuration);
                 LogTlsConfiguration();
 
-                var preconnectResult = await SendPreconnectRequestAsync();
+                var preconnectResult = await SendPreconnectRequestAsync().ConfigureAwait(false);
                 _connectionInfo = new ConnectionInfo(_configuration, preconnectResult.RedirectHost);
 
                 ValidateAgentTokenSettingToPoliciesReceived(preconnectResult.SecurityPolicies);
@@ -91,7 +91,7 @@ namespace NewRelic.Agent.Core.DataTransport
                     EventBus<SecurityPoliciesConfigurationUpdatedEvent>.Publish(new SecurityPoliciesConfigurationUpdatedEvent(securityPoliciesConfiguration));
                 }
 
-                var serverConfiguration = await SendConnectRequestAsync();
+                var serverConfiguration = await SendConnectRequestAsync().ConfigureAwait(false);
                 EventBus<ServerConfigurationUpdatedEvent>.Publish(new ServerConfigurationUpdatedEvent(serverConfiguration));
 
                 LogSecurityPolicySettingsOnceAllSettingsResolved();
@@ -100,7 +100,7 @@ namespace NewRelic.Agent.Core.DataTransport
                 GenerateSpanEventsHarvestLimitMetrics(serverConfiguration.SpanEventHarvestConfig);
 
                 _dataRequestWire = _collectorWireFactory.GetCollectorWire(_configuration, serverConfiguration.RequestHeadersMap, _agentHealthReporter);
-                await SendAgentSettingsAsync();
+                await SendAgentSettingsAsync().ConfigureAwait(false);
 
                 EventBus<AgentConnectedEvent>.Publish(new AgentConnectedEvent());
                 Log.Info("Agent fully connected.");
@@ -145,14 +145,14 @@ namespace NewRelic.Agent.Core.DataTransport
         public async Task DisconnectAsync()
         {
             if (!string.IsNullOrEmpty(_configuration.AgentRunId?.ToString()))
-                await SendShutdownCommandAsync();
+                await SendShutdownCommandAsync().ConfigureAwait(false);
 
             Disable();
         }
 
         public async Task<T> SendDataRequestAsync<T>(string method, params object[] data)
         {
-            return await SendDataOverWireAsync<T>(_dataRequestWire, method, data);
+            return await SendDataOverWireAsync<T>(_dataRequestWire, method, data).ConfigureAwait(false);
         }
 
         #endregion Public API
@@ -173,7 +173,7 @@ namespace NewRelic.Agent.Core.DataTransport
                 payload["security_policies_token"] = _configuration.SecurityPoliciesToken;
             }
 
-            var result = await SendNonDataRequestAsync<PreconnectResult>("preconnect", payload);
+            var result = await SendNonDataRequestAsync<PreconnectResult>("preconnect", payload).ConfigureAwait(false);
             return result;
         }
 
@@ -234,7 +234,7 @@ namespace NewRelic.Agent.Core.DataTransport
         private async Task<ServerConfiguration> SendConnectRequestAsync()
         {
             var connectParameters = GetConnectParameters();
-            var responseMap = await SendNonDataRequestAsync<Dictionary<string, object>>("connect", connectParameters);
+            var responseMap = await SendNonDataRequestAsync<Dictionary<string, object>>("connect", connectParameters).ConfigureAwait(false);
             if (responseMap == null)
                 throw new Exception("Empty connect result payload");
 
@@ -337,7 +337,7 @@ namespace NewRelic.Agent.Core.DataTransport
 
             try
             {
-                await SendDataOverWireAsync<object>(_dataRequestWire, "agent_settings", agentSettings);
+                await SendDataOverWireAsync<object>(_dataRequestWire, "agent_settings", agentSettings).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -388,7 +388,7 @@ namespace NewRelic.Agent.Core.DataTransport
         {
             try
             {
-                await SendDataOverWireAsync<object>(_dataRequestWire, "shutdown");
+                await SendDataOverWireAsync<object>(_dataRequestWire, "shutdown").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -413,7 +413,7 @@ namespace NewRelic.Agent.Core.DataTransport
         private async Task<T> SendNonDataRequestAsync<T>(string method, params object[] data)
         {
             var wire = _collectorWireFactory.GetCollectorWire(_configuration, _agentHealthReporter);
-            return await SendDataOverWireAsync<T>(wire, method, data);
+            return await SendDataOverWireAsync<T>(wire, method, data).ConfigureAwait(false);
         }
 
         private async Task<T> SendDataOverWireAsync<T>(ICollectorWire wire, string method, params object[] data)
@@ -424,7 +424,7 @@ namespace NewRelic.Agent.Core.DataTransport
                 var serializedData = _serializer.Serialize(data);
                 try
                 {
-                    var responseBody = await wire.SendDataAsync(method, _connectionInfo, serializedData, requestGuid);
+                    var responseBody = await wire.SendDataAsync(method, _connectionInfo, serializedData, requestGuid).ConfigureAwait(false);
                     return ParseResponse<T>(responseBody);
                 }
                 catch (Exceptions.HttpException ex)

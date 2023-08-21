@@ -53,12 +53,12 @@ namespace NewRelic.Agent.Core.Commands
 
         private async Task GetAndExecuteAgentCommandsAsync()
         {
-            var commands = await _dataTransportService.GetAgentCommandsAsync();
+            var commands = await _dataTransportService.GetAgentCommandsAsync().ConfigureAwait(false);
             var commandResults = ProcessCommands(commands);
             if (commandResults.Count < 1)
                 return;
 
-            await _dataTransportService.SendCommandResultsAsync(commandResults);
+            await _dataTransportService.SendCommandResultsAsync(commandResults).ConfigureAwait(false);
         }
 
         public IDictionary<string, object> ProcessCommands(IEnumerable<CommandModel> commandModels)

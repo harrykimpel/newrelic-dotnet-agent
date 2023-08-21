@@ -125,7 +125,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (wireModels.Count <= 0)
                 return;
 
-            var responseStatus = await DataTransportService.SendAsync(eventHarvestData, wireModels);
+            var responseStatus = await DataTransportService.SendAsync(eventHarvestData, wireModels).ConfigureAwait(false);
 
             HandleResponse(responseStatus, wireModels);
 

@@ -59,7 +59,7 @@ namespace NewRelic.Agent.Core.DataTransport
         public async Task AttemptAutoStartAsync()
         {
             if (_configuration.AutoStartAgent)
-                await StartAsync();
+                await StartAsync().ConfigureAwait(false);
         }
 
         #region Synchronized methods
@@ -70,7 +70,7 @@ namespace NewRelic.Agent.Core.DataTransport
             if (_started)
                 return;
 
-            await _syncObject.WaitAsync();
+            await _syncObject.WaitAsync().ConfigureAwait(false);
             try
             {
                 // Second, a thread-safe check inside the blocking code block that ensures we'll never start more than once
@@ -78,7 +78,7 @@ namespace NewRelic.Agent.Core.DataTransport
                     return;
 
                 if (_configuration.CollectorSyncStartup || _configuration.CollectorSendDataOnExit)
-                    await ConnectInternalAsync();
+                    await ConnectInternalAsync().ConfigureAwait(false);
                 else
                     _scheduler.ExecuteOnce(() =>
                     {
@@ -95,10 +95,10 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private async Task ConnectAsync()
         {
-            await _syncObject.WaitAsync();
+            await _syncObject.WaitAsync().ConfigureAwait(false);
             try
             {
-                await ConnectInternalAsync();
+                await ConnectInternalAsync().ConfigureAwait(false);
             }
             finally
             {
@@ -111,7 +111,7 @@ namespace NewRelic.Agent.Core.DataTransport
             try
             {
                 _runtimeConfigurationUpdated = false;
-                await _connectionHandler.ConnectAsync();
+                await _connectionHandler.ConnectAsync().ConfigureAwait(false);
 
                 // If the runtime configuration has changed, the app names have updated, so we schedule a restart
                 // This uses the existing ScheduleRestart logic so the current Connect can finish and we follow the backoff pattern and don't spam reconnect attempts.
@@ -163,10 +163,10 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private async Task DisconnectAsync()
         {
-            await _syncObject.WaitAsync();
+            await _syncObject.WaitAsync().ConfigureAwait(false);
             try
             {
-                await DisconnectInternalAsync();
+                await DisconnectInternalAsync().ConfigureAwait(false);
             }
             finally
             {
@@ -176,18 +176,18 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private async Task DisconnectInternalAsync()
         {
-            await _connectionHandler.DisconnectAsync();
+            await _connectionHandler.DisconnectAsync().ConfigureAwait(false);
         }
 
         private async Task ReconnectAsync()
         {
             EventBus<StopHarvestEvent>.Publish(new StopHarvestEvent());
 
-            await _syncObject.WaitAsync();
+            await _syncObject.WaitAsync().ConfigureAwait(false);
             try
             {
-                await DisconnectInternalAsync();
-                await ConnectInternalAsync();
+                await DisconnectInternalAsync().ConfigureAwait(false);
+                await ConnectInternalAsync().ConfigureAwait(false);
             }
             finally
             {
@@ -197,10 +197,10 @@ namespace NewRelic.Agent.Core.DataTransport
 
         public async Task<T> SendDataRequestAsync<T>(string method, params object[] data)
         {
-            await _syncObject.WaitAsync();
+            await _syncObject.WaitAsync().ConfigureAwait(false);
             try
             {
-                return await _connectionHandler.SendDataRequestAsync<T>(method, data);
+                return await _connectionHandler.SendDataRequestAsync<T>(method, data).ConfigureAwait(false);
             }
             finally
             {

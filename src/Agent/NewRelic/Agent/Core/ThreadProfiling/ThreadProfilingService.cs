@@ -221,7 +221,7 @@ namespace NewRelic.Agent.Core.ThreadProfiling
         {
             if (_reportData)
             {
-                await PerformAggregationAsync();
+                await PerformAggregationAsync().ConfigureAwait(false);
             }
         }
 
@@ -322,7 +322,7 @@ namespace NewRelic.Agent.Core.ThreadProfiling
 
                 var profileData = SerializeData();
 
-                await _dataTransportService.SendThreadProfilingDataAsync(profileData);
+                await _dataTransportService.SendThreadProfilingDataAsync(profileData).ConfigureAwait(false);
 
                 LogFailedProfiles();
 

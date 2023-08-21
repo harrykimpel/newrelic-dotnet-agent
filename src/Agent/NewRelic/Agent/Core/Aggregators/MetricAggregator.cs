@@ -76,7 +76,7 @@ namespace NewRelic.Agent.Core.Aggregators
             oldMetrics.MergeUnscopedStats(MetricNames.SupportabilityMetricHarvestTransmit, MetricDataWireModel.BuildCountData());
             var metricsToSend = oldMetrics.ConvertToJsonForSending(_metricNameService);
 
-            var responseStatus = await DataTransportService.SendAsync(metricsToSend);
+            var responseStatus = await DataTransportService.SendAsync(metricsToSend).ConfigureAwait(false);
             HandleResponse(responseStatus, metricsToSend);
 
             Log.Debug("Metric harvest finished.");

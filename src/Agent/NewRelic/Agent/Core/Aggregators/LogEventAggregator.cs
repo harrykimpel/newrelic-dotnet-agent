@@ -97,7 +97,7 @@ namespace NewRelic.Agent.Core.Aggregators
                 hostname,
                 aggregatedEvents);
 
-            var responseStatus = await DataTransportService.SendAsync(modelsCollection);
+            var responseStatus = await DataTransportService.SendAsync(modelsCollection).ConfigureAwait(false);
 
             HandleResponse(responseStatus, aggregatedEvents);
 

@@ -52,7 +52,7 @@ namespace NewRelic.Agent.Core.Utilities
 
         private async Task SendUpdatedLoadedModulesAsync(LoadedModuleWireModelCollection loadedModulesCollection)
         {
-            var responseStatus = await _dataTransportService.SendAsync(loadedModulesCollection);
+            var responseStatus = await _dataTransportService.SendAsync(loadedModulesCollection).ConfigureAwait(false);
             if (responseStatus != DataTransportResponseStatus.RequestSuccessful)
             {
                 // Try again next time

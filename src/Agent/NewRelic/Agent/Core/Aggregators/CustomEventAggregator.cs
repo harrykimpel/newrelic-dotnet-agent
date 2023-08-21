@@ -88,7 +88,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (customEvents.Count <= 0)
                 return;
 
-            var responseStatus = await DataTransportService.SendAsync(customEvents);
+            var responseStatus = await DataTransportService.SendAsync(customEvents).ConfigureAwait(false);
 
             HandleResponse(responseStatus, customEvents);
 

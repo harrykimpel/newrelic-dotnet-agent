@@ -147,7 +147,7 @@ namespace NewRelic.Agent.Core
             {
                 Log.Debug("Attempting AutoStartAsync");
                 var connectionManager = _container.Resolve<IConnectionManager>();
-                await connectionManager.AttemptAutoStartAsync();
+                await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
                 Log.Debug("AutoStartAsync complete");
             });//.GetAwaiter().GetResult();
 

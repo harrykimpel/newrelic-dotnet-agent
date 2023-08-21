@@ -66,7 +66,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (!slowestTraces.Any())
                 return;
 
-            var responseStatus = await DataTransportService.SendAsync(slowestTraces);
+            var responseStatus = await DataTransportService.SendAsync(slowestTraces).ConfigureAwait(false);
 
             HandleResponse(responseStatus, slowestTraces);
 

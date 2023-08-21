@@ -116,7 +116,7 @@ namespace NewRelic.Agent.Core.ThreadProfiling
             {
                 Log.Info($"samples ({samples})");
 
-                await sampleSink.SamplingCompleteAsync();
+                await sampleSink.SamplingCompleteAsync().ConfigureAwait(false);
 
                 nativeMethods.ShutdownNativeThreadProfiler();
                 _workerRunning = 0;

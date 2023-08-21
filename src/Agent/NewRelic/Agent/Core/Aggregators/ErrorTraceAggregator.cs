@@ -82,7 +82,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (errorTraceWireModels.Count <= 0)
                 return;
 
-            var responseStatus = await DataTransportService.SendAsync(errorTraceWireModels);
+            var responseStatus = await DataTransportService.SendAsync(errorTraceWireModels).ConfigureAwait(false);
 
             HandleResponse(responseStatus, errorTraceWireModels);
 

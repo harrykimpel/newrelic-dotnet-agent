@@ -61,7 +61,7 @@ namespace NewRelic.Agent.Core.Aggregators
 
             LogUnencodedTraceData(traceWireModels);
 
-            var responseStatus = await DataTransportService.SendAsync(traceWireModels);
+            var responseStatus = await DataTransportService.SendAsync(traceWireModels).ConfigureAwait(false);
             HandleResponse(responseStatus, traceSamples);
         }
 
