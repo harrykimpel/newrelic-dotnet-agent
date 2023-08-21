@@ -32,7 +32,7 @@ namespace NewRelic.Agent.Core.DataTransport.Client
         public async Task<IHttpResponseMessageWrapper> SendAsync(HttpRequestMessage message)
         {
             var cts = new CancellationTokenSource(_timeoutMilliseconds);
-            return new HttpResponseMessageWrapper(await _httpClient.SendAsync(message, cts.Token));
+            return new HttpResponseMessageWrapper(await _httpClient.SendAsync(message, cts.Token).ConfigureAwait(false));
         }
 
         public TimeSpan Timeout

@@ -62,7 +62,7 @@ namespace NewRelic.Agent.Core.DataTransport.Client
                     req.Content.Headers.Add(contentHeader.Key, contentHeader.Value);
                 }
 
-                var response = await _httpClientWrapper.SendAsync(req);
+                var response = await _httpClientWrapper.SendAsync(req).ConfigureAwait(false);
 
                 var httpResponse = new HttpResponse(request.RequestGuid, response);
                 return httpResponse;

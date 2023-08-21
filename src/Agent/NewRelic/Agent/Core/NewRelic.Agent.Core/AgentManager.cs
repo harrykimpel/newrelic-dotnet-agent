@@ -18,7 +18,9 @@ using NewRelic.Agent.Core.Wrapper;
 using NewRelic.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core
@@ -142,14 +144,19 @@ namespace NewRelic.Agent.Core
             // MT Innovation Days: The connect needs to be synchronous, but any attempt at waiting
             // causes the Agent to die when it invokes httpClient.SendAsync() for the first time.
             // No errors if we don't try to wait, but that causes other problems. Maybe we need some kind of
-            // global flag to tell us when the agent is connected and all other processing waits on that? 
-            var autoStartTask  = Task.Run(async () =>
+            // global flag to tell us when the agent is connected and all other processing waits on that?
+
+            var connectionManager = _container.Resolve<IConnectionManager>();
+            var autoStartTask = Task.Run(async () =>
             {
                 Log.Debug("Attempting AutoStartAsync");
-                var connectionManager = _container.Resolve<IConnectionManager>();
                 await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
                 Log.Debug("AutoStartAsync complete");
             });//.GetAwaiter().GetResult();
+
+            Log.Debug("Waiting for AutoStartAsync to finish");
+            connectionManager.Connected.Wait();
+            Log.Debug("AutoStartAsync finished, continuing execution");
 
             AgentServices.StartServices(_container);
 
@@ -360,7 +367,7 @@ namespace NewRelic.Agent.Core
         private void ProcessExit(object sender, EventArgs e)
         {
             Log.Debug("Received a ProcessExit CLR event for the application domain. About to shut down the .NET Agent...");
-            
+
             Shutdown(true);
         }
 

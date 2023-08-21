@@ -22,7 +22,7 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private readonly IConfiguration _configuration;
         private readonly Dictionary<string, string> _requestHeadersMap;
-        private static Dictionary<string, string> _emptyRequestHeadersMap = new Dictionary<string, string>();
+        private static readonly Dictionary<string, string> _emptyRequestHeadersMap = new Dictionary<string, string>();
         private readonly IAgentHealthReporter _agentHealthReporter;
 
         public HttpCollectorWire(IConfiguration configuration, IAgentHealthReporter agentHealthReporter, IHttpClientFactory httpClientFactory)

@@ -57,7 +57,7 @@ namespace CompositeTests
 
         private readonly ICollection<WaitCallback> _queuedCallbacks;
 
-        private IContextStorage<IInternalTransaction> _primaryTransactionContextStorage = new TestTransactionContext<IInternalTransaction>();
+        private readonly IContextStorage<IInternalTransaction> _primaryTransactionContextStorage = new TestTransactionContext<IInternalTransaction>();
 
         public List<MetricWireModel> Metrics { get; } = new List<MetricWireModel>();
 
@@ -89,7 +89,7 @@ namespace CompositeTests
 
         public InstrumentationWatcher InstrumentationWatcher { get; }
 
-        private IAttributeDefinitionService _attribDefSvc;
+        private readonly IAttributeDefinitionService _attribDefSvc;
         public IAttributeDefinitions AttributeDefinitions => _attribDefSvc?.AttributeDefs;
 
         private readonly bool _shouldAllowThreads;
@@ -332,9 +332,7 @@ namespace CompositeTests
             // Update CurrentConfiguration
             IConfiguration newConfig = null;
             RequestBus<GetCurrentConfigurationRequest, IConfiguration>.Post(new GetCurrentConfigurationRequest(), config => newConfig = config);
-            if (newConfig == null)
-                throw new NullReferenceException("newConfig");
-            CurrentConfiguration = newConfig;
+            CurrentConfiguration = newConfig ?? throw new NullReferenceException("newConfig");
         }
 
         public void SetEventListenerSamplersEnabled(bool enable)

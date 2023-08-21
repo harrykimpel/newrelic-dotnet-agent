@@ -1,6 +1,7 @@
 // Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core.DataTransport
@@ -10,5 +11,7 @@ namespace NewRelic.Agent.Core.DataTransport
         Task<T> SendDataRequestAsync<T>(string method, params object[] data);
 
         Task AttemptAutoStartAsync();
+
+        SemaphoreSlim Connected { get; }
     }
 }

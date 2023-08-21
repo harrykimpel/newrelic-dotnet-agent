@@ -43,7 +43,7 @@ namespace NewRelic.OpenTracing.AmazonLambda
             if (output != null)
             {
                 // if output is not null determine whether the output
-                // is of type Task. Task is converted to Task<VoidTaskResult>
+                // is of type Task. Task is converted to Task<VoidReturnsAsync>
                 // so that is covered too. 
                 Type outputType = output.GetType();
                 if (outputType.IsGenericType &&

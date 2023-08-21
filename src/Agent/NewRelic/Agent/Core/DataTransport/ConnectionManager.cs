@@ -49,6 +49,8 @@ namespace NewRelic.Agent.Core.DataTransport
             _subscriptions.Add<StartAgentEvent>(OnStartAgent);
             _subscriptions.Add<RestartAgentEvent>(OnRestartAgent);
 
+            Connected.Wait();
+
             // calling Disconnect on Shutdown is crashing on Linux.  This is probably a CLR bug, but we have to work around it.
             // The Shutdown call is actually not very important (agent runs time out after 5 minutes anyway) so just don't call it.
 #if NETFRAMEWORK
@@ -60,7 +62,11 @@ namespace NewRelic.Agent.Core.DataTransport
         {
             if (_configuration.AutoStartAgent)
                 await StartAsync().ConfigureAwait(false);
+
+            Connected.Release();
         }
+
+        public SemaphoreSlim Connected { get; } = new SemaphoreSlim(1);
 
         #region Synchronized methods
 
