@@ -71,7 +71,7 @@ namespace NewRelic.Agent.Core.DataTransport.Client
             {
                 if (_diagnoseConnectionError)
                 {
-                    DiagnoseConnectionError(request.Uri.Host);
+                    await DiagnoseConnectionErrorAsync(request.Uri.Host).ConfigureAwait(false);
                 }
 
                 throw;

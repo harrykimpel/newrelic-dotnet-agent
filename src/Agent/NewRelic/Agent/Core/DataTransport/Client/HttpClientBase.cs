@@ -34,14 +34,14 @@ namespace NewRelic.Agent.Core.DataTransport.Client
         }
 
 
-        protected void DiagnoseConnectionError(string host)
+        protected async Task DiagnoseConnectionErrorAsync(string host)
         {
             _diagnoseConnectionError = false;
             try
             {
                 if (!IPAddress.TryParse(host, out _))
                 {
-                    Dns.GetHostEntry(host);
+                    await Dns.GetHostEntryAsync(host).ConfigureAwait(false);
                 }
             }
             catch (Exception)
@@ -49,10 +49,10 @@ namespace NewRelic.Agent.Core.DataTransport.Client
                 Log.ErrorFormat("Unable to resolve host name \"{0}\"", host);
             }
 
-            TestConnection();
+            await TestConnectionAsync().ConfigureAwait(false);
         }
 
-        protected void TestConnection()
+        protected async Task TestConnectionAsync()
         {
             const string testAddress = "http://www.google.com";
             try
@@ -62,10 +62,11 @@ namespace NewRelic.Agent.Core.DataTransport.Client
                 {
                     wc.Proxy = _proxy;
 
-                    wc.DownloadString(testAddress);
+                    wc.DownloadString(new Uri(testAddress));
+                    await Task.CompletedTask;
                 }
 #else
-                _lazyHttpClient.Value.GetAsync(testAddress).GetAwaiter().GetResult();
+                await _lazyHttpClient.Value.GetAsync(testAddress).ConfigureAwait(false);
 #endif
                 Log.InfoFormat("Connection test to \"{0}\" succeeded", testAddress);
             }
