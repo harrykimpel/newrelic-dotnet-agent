@@ -25,10 +25,8 @@ namespace NewRelic.Agent.Core.Utilities
             _configurationService = configurationService;
             _dataTransportService = dataTransportService;
             _scheduler = scheduler;
-            _scheduler.ExecuteEvery(GetLoadedModulesAction, _configuration.UpdateLoadedModulesCycle);
+            _scheduler.ExecuteEveryAsync(GetLoadedModules, _configuration.UpdateLoadedModulesCycle);
         }
-
-        private void GetLoadedModulesAction() => Task.Run(GetLoadedModules).GetAwaiter().GetResult();
 
         private async Task GetLoadedModules()
         {

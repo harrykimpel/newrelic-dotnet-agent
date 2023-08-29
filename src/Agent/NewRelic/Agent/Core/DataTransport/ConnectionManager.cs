@@ -86,10 +86,7 @@ namespace NewRelic.Agent.Core.DataTransport
                 if (_configuration.CollectorSyncStartup || _configuration.CollectorSendDataOnExit)
                     await ConnectInternalAsync().ConfigureAwait(false);
                 else
-                    _scheduler.ExecuteOnce(() =>
-                    {
-                        Task.Run(ConnectAsync).GetAwaiter().GetResult();
-                    }, TimeSpan.Zero);
+                    _scheduler.ExecuteOnceAsync(ConnectAsync, TimeSpan.Zero);
 
                 _started = true;
             }
@@ -228,10 +225,7 @@ namespace NewRelic.Agent.Core.DataTransport
         {
             var _retryTime = ConnectionRetryBackoffSequence[_connectionAttempt];
             Log.InfoFormat("Will attempt to reconnect in {0} seconds", _retryTime.TotalSeconds);
-            _scheduler.ExecuteOnce(() =>
-            {
-                Task.Run(ConnectAsync).GetAwaiter().GetResult();
-            }, _retryTime);
+            _scheduler.ExecuteOnceAsync(ConnectAsync, _retryTime);
 
             _connectionAttempt = Math.Min(_connectionAttempt + 1, ConnectionRetryBackoffSequence.Length - 1);
         }
@@ -279,10 +273,7 @@ namespace NewRelic.Agent.Core.DataTransport
 
             Log.Info("Reconnecting due to configuration change");
 
-            _scheduler.ExecuteOnce(() =>
-            {
-                Task.Run(ConnectAsync).GetAwaiter().GetResult();
-            }, TimeSpan.Zero);
+            _scheduler.ExecuteOnceAsync(ConnectAsync, TimeSpan.Zero);
         }
 
         private void OnStartAgent(StartAgentEvent eventData)

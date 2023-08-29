@@ -145,14 +145,15 @@ namespace NewRelic.Agent.Core
             // causes the Agent to die when it invokes httpClient.SendAsync() for the first time.
             // No errors if we don't try to wait, but that causes other problems. Maybe we need some kind of
             // global flag to tell us when the agent is connected and all other processing waits on that?
-
             var connectionManager = _container.Resolve<IConnectionManager>();
             var autoStartTask = Task.Run(async () =>
             {
                 Log.Debug("Attempting AutoStartAsync");
                 await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
                 Log.Debug("AutoStartAsync complete");
-            });//.GetAwaiter().GetResult();
+            });
+
+            autoStartTask.GetAwaiter().GetResult();
 
             Log.Debug("Waiting for AutoStartAsync to finish");
             connectionManager.Connected.Wait();

@@ -3,6 +3,7 @@
 
 using NewRelic.Core.Logging;
 using System;
+using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core.Utilities
 {
@@ -13,6 +14,26 @@ namespace NewRelic.Agent.Core.Utilities
             try
             {
                 action();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Log.Error($"An exception occurred while doing some background work: {ex}");
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+    public static class AsyncFuncExtensions
+    {
+        public static async Task CatchAndLogAsync(this Func<Task> asyncFunc)
+        {
+            try
+            {
+                await asyncFunc();
             }
             catch (Exception ex)
             {
