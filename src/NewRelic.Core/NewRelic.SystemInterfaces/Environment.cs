@@ -4,11 +4,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using NewRelic.Core.Logging;
 
 namespace NewRelic.SystemInterfaces
 {
     public class Environment : IEnvironment
     {
+        public const string LegacyEnvVarPrefix = "NEWRELIC_";
+        public const string DefaultEnvVarPrefix = "NEW_RELIC_";
+
         public string[] GetCommandLineArgs()
         {
             return System.Environment.GetCommandLineArgs();
@@ -16,6 +20,29 @@ namespace NewRelic.SystemInterfaces
 
         public string GetEnvironmentVariable(string variable)
         {
+            // The environment variables used to configure the agent should start with "NEW_RELIC_"
+            // There are a few older variables (e.g. "NEWRELIC_LOG_LEVEL") that start with "NEWRELIC_"
+            // We want to standardize on "NEW_RELIC_" but we also want to provide a soft landing for our customers,
+            // so we will look for both spellings, and in the unlikely case that both exist, prefer the "NEW_RELIC_" one.
+            // Log a warning if the legacy spelling is used.
+
+            if (variable.StartsWith(LegacyEnvVarPrefix))
+            {
+                var legacyValue = System.Environment.GetEnvironmentVariable(variable);
+                var baseName = variable.Substring(LegacyEnvVarPrefix.Length);
+                var defaultName = DefaultEnvVarPrefix + baseName;
+                var defaultValue = System.Environment.GetEnvironmentVariable(defaultName);
+                if (defaultValue != null)
+                {
+                    return defaultValue;
+                }
+                else if (legacyValue != null)
+                {
+                    Log.Warn($"Found agent config environment variable {variable}. Please update to use {defaultName} instead. {variable} will be removed in a future major version.");
+                    return legacyValue;
+                }
+                return null;
+            }
             return System.Environment.GetEnvironmentVariable(variable);
         }
 
