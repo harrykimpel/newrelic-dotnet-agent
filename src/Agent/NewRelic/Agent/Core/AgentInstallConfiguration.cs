@@ -24,12 +24,12 @@ namespace NewRelic.Agent.Core
         private const string NewRelicHomeEnvironmentVariable = "CORECLR_NEWRELIC_HOME";
         private const string RuntimeDirectoryName = "netcore";
 #else
-        private const string NewRelicHomeEnvironmentVariable = "NEW_RELIC_HOME";
+        private const string NewRelicHomeEnvironmentVariable = "NEWRELIC_HOME";
         private const string RuntimeDirectoryName = "netframework";
 #endif
-        private const string NewRelicInstallPathEnvironmentVariable = "NEW_RELIC_INSTALL_PATH";
-        private const string NewRelicLogDirectoryEnvironmentVariable = "NEW_RELIC_LOG_DIRECTORY";
-        private const string NewRelicLogLevelEnvironmentVariable = "NEW_RELIC_LOG_LEVEL";
+        private const string NewRelicInstallPathEnvironmentVariable = "NEWRELIC_INSTALL_PATH";
+        private const string NewRelicLogDirectoryEnvironmentVariable = "NEWRELIC_LOG_DIRECTORY";
+        private const string NewRelicLogLevelEnvironmentVariable = "NEWRELIC_LOG_LEVEL";
 
         private static SystemInterfaces.Environment _env;
 

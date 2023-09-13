@@ -15,6 +15,8 @@ namespace NewRelic.SystemInterfaces
 
         private Func<string, string> _getEnvVar = System.Environment.GetEnvironmentVariable;
 
+        public Environment() { }
+
         public Environment(Func<string,string> getEnvironmentVariable)
         {
             _getEnvVar = getEnvironmentVariable;
