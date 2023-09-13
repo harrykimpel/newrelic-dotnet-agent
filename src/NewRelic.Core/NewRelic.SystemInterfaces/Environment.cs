@@ -13,6 +13,13 @@ namespace NewRelic.SystemInterfaces
         public const string LegacyEnvVarPrefix = "NEWRELIC_";
         public const string DefaultEnvVarPrefix = "NEW_RELIC_";
 
+        private Func<string, string> _getEnvVar = System.Environment.GetEnvironmentVariable;
+
+        public Environment(Func<string,string> getEnvironmentVariable)
+        {
+            _getEnvVar = getEnvironmentVariable;
+        }
+
         public string[] GetCommandLineArgs()
         {
             return System.Environment.GetCommandLineArgs();
@@ -28,10 +35,10 @@ namespace NewRelic.SystemInterfaces
 
             if (variable.StartsWith(LegacyEnvVarPrefix))
             {
-                var legacyValue = System.Environment.GetEnvironmentVariable(variable);
+                var legacyValue = _getEnvVar(variable);
                 var baseName = variable.Substring(LegacyEnvVarPrefix.Length);
                 var defaultName = DefaultEnvVarPrefix + baseName;
-                var defaultValue = System.Environment.GetEnvironmentVariable(defaultName);
+                var defaultValue = _getEnvVar(defaultName);
                 if (defaultValue != null)
                 {
                     return defaultValue;
@@ -43,7 +50,7 @@ namespace NewRelic.SystemInterfaces
                 }
                 return null;
             }
-            return System.Environment.GetEnvironmentVariable(variable);
+            return _getEnvVar(variable);
         }
 
         public string GetEnvironmentVariable(string variable, EnvironmentVariableTarget environmentVariableTarget)
