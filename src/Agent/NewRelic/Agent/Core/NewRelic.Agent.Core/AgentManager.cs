@@ -198,12 +198,22 @@ namespace NewRelic.Agent.Core
                     "COR_PROFILER_PATH",
                     "COR_PROFILER_PATH_32",
                     "COR_PROFILER_PATH_64",
+
+                    // These variables have historically started with "NEWRELIC_" but we want to standardize on "NEW_RELIC_"
+                    // and deprecate the legacy spelling. Check for both spellings for now
                     "NEWRELIC_HOME",
+                    "NEW_RELIC_HOME",
                     "NEWRELIC_INSTALL_PATH",
-                    "NEW_RELIC_APP_NAME",
+                    "NEW_RELIC_INSTALL_PATH",
+                    "NEWRELIC_PROFILER_LOG_DIRECTORY",
+                    "NEW_RELIC_PROFILER_LOG_DIRECTORY",
+                    "NEWRELIC_LOG_LEVEL",
+                    "NEW_RELIC_LOG_LEVEL",
+
                     "RoleName",
                     "IISEXPRESS_SITENAME",
                     "APP_POOL_ID",
+                    "NEW_RELIC_APP_NAME",
                     "NEW_RELIC_APPLICATION_LOGGING_ENABLED",
                     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED",
                     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED",
@@ -218,8 +228,6 @@ namespace NewRelic.Agent.Core
                     "NEW_RELIC_PROCESS_HOST_DISPLAY_NAME",
                     "NEW_RELIC_IGNORE_SERVER_SIDE_CONFIG",
                     "NEW_RELIC_LOG",
-                    "NEWRELIC_PROFILER_LOG_DIRECTORY",
-                    "NEWRELIC_LOG_LEVEL",
                     "NEW_RELIC_LABELS",
                     "NEW_RELIC_PROXY_HOST",
                     "NEW_RELIC_PROXY_URI_PATH",
