@@ -71,17 +71,16 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
                 RedirectStandardInput = RedirectStandardInput
             };
 
-            startInfo.EnvironmentVariables.Remove("COR_ENABLE_PROFILING");
-            startInfo.EnvironmentVariables.Remove("COR_PROFILER");
-            startInfo.EnvironmentVariables.Remove("COR_PROFILER_PATH");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_INSTALL_PATH");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_LICENSEKEY");
-            startInfo.EnvironmentVariables.Remove("NEW_RELIC_LICENSE_KEY");
-            startInfo.EnvironmentVariables.Remove("NEW_RELIC_HOST");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_HOME");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_PROFILER_LOG_DIRECTORY");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_LOG_DIRECTORY");
-            startInfo.EnvironmentVariables.Remove("NEWRELIC_LOG_LEVEL");
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_ENABLE_PROFILING", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER_PATH", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_INSTALL_PATH", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LICENSEKEY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEW_RELIC_HOST", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_HOME", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_PROFILER_LOG_DIRECTORY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_DIRECTORY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_LEVEL", startInfo);
 
             // configure env vars as needed for testing environment overrides
             foreach (var envVar in environmentVariables)

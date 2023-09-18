@@ -16,8 +16,6 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
 {
     public class RemoteService : RemoteApplication
     {
-        public const string LegacyEnvVarPrefix = "NEWRELIC_";
-        public const string DefaultEnvVarPrefix = "NEW_RELIC_";
 
         private static readonly ConcurrentDictionary<string, object> PublishCoreAppLocks = new ConcurrentDictionary<string, object>();
 
@@ -215,22 +213,21 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
 
             Console.WriteLine($"[{DateTime.Now}] RemoteService.Start(): FileName={applicationFilePath}, Arguments={arguments}, WorkingDirectory={DestinationApplicationDirectoryPath}, RedirectStandardOutput={captureStandardOutput}, RedirectStandardError={captureStandardOutput}, RedirectStandardInput={RedirectStandardInput}");
 
-            RemoveEnvironmentVariableFromProcess("COR_ENABLE_PROFILING", startInfo);
-            RemoveEnvironmentVariableFromProcess("COR_PROFILER", startInfo);
-            RemoveEnvironmentVariableFromProcess("COR_PROFILER_PATH", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_HOME", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_PROFILER_LOG_DIRECTORY", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_LOG_DIRECTORY", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_LOG_LEVEL", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_LICENSEKEY", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEW_RELIC_LICENSE_KEY", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEW_RELIC_HOST", startInfo);
-            RemoveEnvironmentVariableFromProcess("NEWRELIC_INSTALL_PATH", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_ENABLE_PROFILING", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER_PATH", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_HOME", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_PROFILER_LOG_DIRECTORY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_DIRECTORY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_LEVEL", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LICENSEKEY", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEW_RELIC_HOST", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_INSTALL_PATH", startInfo);
 
-            RemoveEnvironmentVariableFromProcess("CORECLR_ENABLE_PROFILING", startInfo);
-            RemoveEnvironmentVariableFromProcess("CORECLR_PROFILER", startInfo);
-            RemoveEnvironmentVariableFromProcess("CORECLR_PROFILER_PATH", startInfo);
-            RemoveEnvironmentVariableFromProcess("CORECLR_NEWRELIC_HOME", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_ENABLE_PROFILING", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_PROFILER", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_PROFILER_PATH", startInfo);
+            EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_NEWRELIC_HOME", startInfo);
 
             // configure env vars as needed for testing environment overrides
             foreach (var envVar in environmentVariables)
@@ -370,18 +367,6 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
                     CommonUtils.SetAppNameInAppConfig(appConfigFile, AppName, null);
                 }
             }
-        }
-
-        private void RemoveEnvironmentVariableFromProcess(string envVarName, ProcessStartInfo startInfo)
-        {
-            if (envVarName.StartsWith(LegacyEnvVarPrefix))
-            {
-                var baseName = envVarName.Substring(LegacyEnvVarPrefix.Length);
-                var defaultName = DefaultEnvVarPrefix + baseName;
-                startInfo.EnvironmentVariables.Remove(defaultName);
-            }
-
-            startInfo.EnvironmentVariables.Remove(envVarName);
         }
 
 

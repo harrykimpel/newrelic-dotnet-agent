@@ -90,22 +90,22 @@ public class ContainerApplication : RemoteApplication
             $"[{AppName} {DateTime.Now}] ContainerApplication.Start(): FileName=docker, Arguments={arguments}, WorkingDirectory={DestinationRootDirectoryPath}, RedirectStandardOutput={captureStandardOutput}, RedirectStandardError={captureStandardOutput}, RedirectStandardInput={RedirectStandardInput}");
 
         // Cleanup environment variables from the system
-        startInfo.EnvironmentVariables.Remove("COR_ENABLE_PROFILING");
-        startInfo.EnvironmentVariables.Remove("COR_PROFILER");
-        startInfo.EnvironmentVariables.Remove("COR_PROFILER_PATH");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_HOME");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_PROFILER_LOG_DIRECTORY");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_LOG_DIRECTORY");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_LOG_LEVEL");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_LICENSEKEY");
-        startInfo.EnvironmentVariables.Remove("NEW_RELIC_LICENSE_KEY");
-        startInfo.EnvironmentVariables.Remove("NEW_RELIC_HOST");
-        startInfo.EnvironmentVariables.Remove("NEWRELIC_INSTALL_PATH");
-        startInfo.EnvironmentVariables.Remove("CORECLR_ENABLE_PROFILING");
-        startInfo.EnvironmentVariables.Remove("CORECLR_PROFILER");
-        startInfo.EnvironmentVariables.Remove("CORECLR_PROFILER_PATH");
-        startInfo.EnvironmentVariables.Remove("CORECLR_NEWRELIC_HOME");
-        startInfo.EnvironmentVariables.Remove("NETWORK_NAME");
+        EnvironmentVariables.RemoveEnvVarFromProcess("COR_ENABLE_PROFILING", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("COR_PROFILER_PATH", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_HOME", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_PROFILER_LOG_DIRECTORY", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_DIRECTORY", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LOG_LEVEL", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_LICENSEKEY", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEW_RELIC_LICENSE_KEY", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEW_RELIC_HOST", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NEWRELIC_INSTALL_PATH", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_ENABLE_PROFILING", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_PROFILER", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_PROFILER_PATH", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("CORECLR_NEWRELIC_HOME", startInfo);
+        EnvironmentVariables.RemoveEnvVarFromProcess("NETWORK_NAME", startInfo);
 
         // Docker compose settings
         var testConfiguration = IntegrationTestConfiguration.GetIntegrationTestConfiguration("Default");
