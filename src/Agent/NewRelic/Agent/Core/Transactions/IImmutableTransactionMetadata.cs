@@ -20,6 +20,9 @@ namespace NewRelic.Agent.Core.Transactions
         string SyntheticsResourceId { get; }
         string SyntheticsJobId { get; }
         string SyntheticsMonitorId { get; }
+        string SyntheticsType { get; }
+        string SyntheticsInitiator { get; }
+        IDictionary<string, string> SyntheticsAttributes { get; }
         bool IsSynthetics { get; }
         bool HasCatResponseHeaders { get; }
     }

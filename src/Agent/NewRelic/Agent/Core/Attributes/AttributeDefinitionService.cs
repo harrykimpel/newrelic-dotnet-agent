@@ -109,6 +109,10 @@ namespace NewRelic.Agent.Core.Attributes
         AttributeDefinition<string, string> SyntheticsResourceId { get; }
         AttributeDefinition<string, string> SyntheticsResourceIdForTraces { get; }
         AttributeDefinition<long, long> ThreadId { get; }
+        AttributeDefinition<string, string> SyntheticsType { get; }
+        AttributeDefinition<string, string> SyntheticsTypeForTraces { get; }
+        AttributeDefinition<string, string> SyntheticsInitiator { get; }
+        AttributeDefinition<string, string> SyntheticsInitiatorForTraces { get; }
         AttributeDefinition<DateTime, long> Timestamp { get; }
         AttributeDefinition<DateTime, long> TimestampForError { get; }
         AttributeDefinition<TimeSpan, double> TotalTime { get; }
@@ -129,6 +133,8 @@ namespace NewRelic.Agent.Core.Attributes
         AttributeDefinition<string, string> GetRequestParameterAttribute(string paramName);
 
         AttributeDefinition<string, string> GetRequestHeadersAttribute(string paramName);
+        AttributeDefinition<string, string> GetSyntheticsInfoAttribute(string paramName);
+        AttributeDefinition<string, string> GetSyntheticsInfoAttributeForTraces(string paramName);
 
         AttributeDefinition<TypeAttributeValue, string> GetTypeAttribute(TypeAttributeValue destination);
     }
@@ -174,6 +180,8 @@ namespace NewRelic.Agent.Core.Attributes
         private readonly ConcurrentDictionary<string, AttributeDefinition<object, object>> _customEventCustomAttributes = new ConcurrentDictionary<string, AttributeDefinition<object, object>>();
         private readonly ConcurrentDictionary<string, AttributeDefinition<string, string>> _requestParameterAttributes = new ConcurrentDictionary<string, AttributeDefinition<string, string>>();
         private readonly ConcurrentDictionary<string, AttributeDefinition<string, string>> _requestHeadersAttributes = new ConcurrentDictionary<string, AttributeDefinition<string, string>>();
+        private readonly ConcurrentDictionary<string, AttributeDefinition<string, string>> _syntheticsHeadersAttributes = new ConcurrentDictionary<string, AttributeDefinition<string, string>>();
+        private readonly ConcurrentDictionary<string, AttributeDefinition<string, string>> _syntheticsHeadersAttributesForTraces = new ConcurrentDictionary<string, AttributeDefinition<string, string>>();
 
         private readonly ConcurrentDictionary<TypeAttributeValue, AttributeDefinition<TypeAttributeValue, string>> _typeAttributes = new ConcurrentDictionary<TypeAttributeValue, AttributeDefinition<TypeAttributeValue, string>>();
 
@@ -234,6 +242,29 @@ namespace NewRelic.Agent.Core.Attributes
                 .Build(_attribFilter);
         }
 
+        private AttributeDefinition<string, string> CreateSyntheticsInfoAttribute(string paramName)
+        {
+            var attribName = $"nr.synthetics{paramName}";
+
+            return AttributeDefinitionBuilder
+                .CreateString(attribName, AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionEvent)
+                .AppliesTo(AttributeDestinations.ErrorEvent)
+                .Build(_attribFilter);
+        }
+
+
+        private AttributeDefinition<string, string> CreateSyntheticsInfoAttributeForTraces(string paramName)
+        {
+            var attribName = $"synthetics_{paramName}";
+
+            return AttributeDefinitionBuilder
+                .CreateString(attribName, AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionTrace)
+                .Build(_attribFilter);
+        }
+
+
         public AttributeDefinition<object, object> GetCustomAttributeForTransaction(string name)
         {
             return _trxCustomAttributes.GetOrAdd(name, CreateCustomAttributeForTransaction);
@@ -262,6 +293,15 @@ namespace NewRelic.Agent.Core.Attributes
         public AttributeDefinition<string, string> GetRequestHeadersAttribute(string paramName)
         {
             return _requestHeadersAttributes.GetOrAdd(paramName, CreateRequestHeadersAttribute);
+        }
+
+        public AttributeDefinition<string, string> GetSyntheticsInfoAttribute(string paramName)
+        {
+            return _syntheticsHeadersAttributes.GetOrAdd(paramName, CreateSyntheticsInfoAttribute);
+        }
+        public AttributeDefinition<string, string> GetSyntheticsInfoAttributeForTraces(string paramName)
+        {
+            return _syntheticsHeadersAttributesForTraces.GetOrAdd(paramName, CreateSyntheticsInfoAttributeForTraces);
         }
 
         private AttributeDefinition<TypeAttributeValue, string> CreateTypeAttribute(TypeAttributeValue tm)
@@ -748,6 +788,32 @@ namespace NewRelic.Agent.Core.Attributes
         private AttributeDefinition<string, string> _syntheticsMonitorIdForTraces;
         public AttributeDefinition<string, string> SyntheticsMonitorIdForTraces => _syntheticsMonitorIdForTraces ?? (_syntheticsMonitorIdForTraces =
             AttributeDefinitionBuilder.CreateString("synthetics_monitor_id", AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionTrace)
+                .Build(_attribFilter));
+
+        private AttributeDefinition<string, string> _syntheticsType;
+        public AttributeDefinition<string, string> SyntheticsType => _syntheticsType ?? (_syntheticsType =
+            AttributeDefinitionBuilder.CreateString("nr.syntheticsType", AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionEvent)
+                .AppliesTo(AttributeDestinations.ErrorEvent)
+                .Build(_attribFilter));
+
+        private AttributeDefinition<string, string> _syntheticsTypeForTraces;
+        public AttributeDefinition<string, string> SyntheticsTypeForTraces => _syntheticsTypeForTraces ?? (_syntheticsTypeForTraces =
+            AttributeDefinitionBuilder.CreateString("synthetics_type", AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionTrace)
+                .Build(_attribFilter));
+
+        private AttributeDefinition<string, string> _syntheticsInitiator;
+        public AttributeDefinition<string, string> SyntheticsInitiator => _syntheticsInitiator ?? (_syntheticsInitiator =
+            AttributeDefinitionBuilder.CreateString("nr.syntheticsInitiator", AttributeClassification.Intrinsics)
+                .AppliesTo(AttributeDestinations.TransactionEvent)
+                .AppliesTo(AttributeDestinations.ErrorEvent)
+                .Build(_attribFilter));
+
+        private AttributeDefinition<string, string> _syntheticsInitiatorForTraces;
+        public AttributeDefinition<string, string> SyntheticsInitiatorForTraces => _syntheticsInitiatorForTraces ?? (_syntheticsInitiatorForTraces =
+            AttributeDefinitionBuilder.CreateString("synthetics_initiator", AttributeClassification.Intrinsics)
                 .AppliesTo(AttributeDestinations.TransactionTrace)
                 .Build(_attribFilter));
 

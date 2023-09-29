@@ -35,6 +35,9 @@ namespace NewRelic.Agent.Core.Transactions
         void SetSyntheticsResourceId(string syntheticsResourceId);
         void SetSyntheticsJobId(string syntheticsJobId);
         void SetSyntheticsMonitorId(string syntheticsMonitorId);
+        void SetSyntheticsType(string syntheticsType);
+        void SetSyntheticsInitiator(string syntheticsInitiator);
+        void SetSyntheticsAttributes(IDictionary<string, string> syntheticsAttributes);
         void MarkHasCatResponseHeaders();
 
         long GetCrossApplicationReferrerContentLength();
@@ -73,6 +76,10 @@ namespace NewRelic.Agent.Core.Transactions
         private volatile string _syntheticsResourceId;
         private volatile string _syntheticsJobId;
         private volatile string _syntheticsMonitorId;
+        private volatile string _syntheticsType;
+        private volatile string _syntheticsInitiator;
+        private volatile IDictionary<string, string> _syntheticsAttributes;
+
         private volatile string _latestCrossApplicationPathHash;
 
         //if this never gets set, then default to -1
@@ -92,6 +99,7 @@ namespace NewRelic.Agent.Core.Transactions
 
         private readonly AttributeValueCollection _transactionAttributes;
         public AttributeValueCollection UserAndRequestAttributes => _transactionAttributes;
+        public IDictionary<string, string> SyntheticsAttributes => _syntheticsAttributes;
 
         private readonly ConcurrentHashSet<string> _allCrossApplicationPathHashes = new ConcurrentHashSet<string>();
         private volatile bool _hasResponseCatHeaders;
@@ -207,6 +215,19 @@ namespace NewRelic.Agent.Core.Transactions
         {
             _syntheticsMonitorId = syntheticsMonitorId;
         }
+        public void SetSyntheticsType(string syntheticsType)
+        {
+            _syntheticsType = syntheticsType;
+        }
+        public void SetSyntheticsInitiator(string syntheticsInitiator)
+        {
+            _syntheticsInitiator = syntheticsInitiator;
+        }
+        public void SetSyntheticsAttributes(IDictionary<string, string> syntheticsAttributes)
+        {
+            Interlocked.Exchange(ref _syntheticsAttributes, syntheticsAttributes);
+        }
+
 
         public void MarkHasCatResponseHeaders()
         {
@@ -221,6 +242,9 @@ namespace NewRelic.Agent.Core.Transactions
         public string SyntheticsJobId => _syntheticsJobId;
         public string SyntheticsMonitorId => _syntheticsMonitorId;
         public string SyntheticsResourceId => _syntheticsResourceId;
+        public string SyntheticsType => _syntheticsType;
+        public string SyntheticsInitiator => _syntheticsInitiator;
+
         public string CrossApplicationReferrerPathHash => _crossApplicationReferrerPathHash;
         public string CrossApplicationReferrerTripId => _crossApplicationReferrerTripId;
         public string CrossApplicationReferrerProcessId => _crossApplicationReferrerProcessId;

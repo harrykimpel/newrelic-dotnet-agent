@@ -273,7 +273,9 @@ namespace NewRelic.Agent.Core
                 return;
             }
 
-            UpdateTransactionMetaData(transaction, syntheticsRequestData);
+            var syntheticsInfoData = _syntheticsHeaderHandler.GetInfoHeaders(carrier, getter);
+
+            UpdateTransactionMetaData(transaction, syntheticsRequestData, syntheticsInfoData);
         }
 
 
@@ -584,11 +586,18 @@ namespace NewRelic.Agent.Core
             return contentLength;
         }
 
-        private void UpdateTransactionMetaData(IInternalTransaction transaction, SyntheticsHeader syntheticsHeader)
+        private void UpdateTransactionMetaData(IInternalTransaction transaction, SyntheticsHeader syntheticsHeader, SyntheticsInfoHeader syntheticsInfoHeader)
         {
             transaction.TransactionMetadata.SetSyntheticsResourceId(syntheticsHeader.ResourceId);
             transaction.TransactionMetadata.SetSyntheticsJobId(syntheticsHeader.JobId);
             transaction.TransactionMetadata.SetSyntheticsMonitorId(syntheticsHeader.MonitorId);
+
+            if (syntheticsInfoHeader != null)
+            {
+                transaction.TransactionMetadata.SetSyntheticsType(syntheticsInfoHeader.Type);
+                transaction.TransactionMetadata.SetSyntheticsInitiator(syntheticsInfoHeader.Initiator);
+                transaction.TransactionMetadata.SetSyntheticsAttributes(syntheticsInfoHeader.Attributes);
+            }
         }
 
         internal void Detach(bool removeAsync, bool removePrimary)

@@ -48,6 +48,9 @@ namespace NewRelic.Agent.Core.Transactions
         public string SyntheticsResourceId { get; }
         public string SyntheticsJobId { get; }
         public string SyntheticsMonitorId { get; }
+        public string SyntheticsType { get; }
+        public string SyntheticsInitiator { get; }
+        public IDictionary<string, string> SyntheticsAttributes { get; }
         public bool IsSynthetics { get; }
         public bool HasCatResponseHeaders { get; }
         public float Priority { get; }

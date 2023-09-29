@@ -15,6 +15,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Synthetics
     {
         IEnumerable<KeyValuePair<string, string>> TryGetOutboundSyntheticsRequestHeader(IInternalTransaction transaction);
         SyntheticsHeader TryDecodeInboundRequestHeaders<T>(T carrier, Func<T, string, IEnumerable<string>> getter);
+        SyntheticsInfoHeader GetInfoHeaders<T>(T carrier, Func<T, string, IEnumerable<string>> getter);
     }
 
     public class SyntheticsHeaderHandler : ISyntheticsHeaderHandler
@@ -39,14 +40,28 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Synthetics
 
             var syntheticsHeader = new SyntheticsHeader(SyntheticsHeader.SupportedHeaderVersion, accountId, metadata.SyntheticsResourceId, metadata.SyntheticsJobId, metadata.SyntheticsMonitorId) { EncodingKey = _configurationService.Configuration.EncodingKey };
 
+            var syntheticsInfoHeader = new SyntheticsInfoHeader(SyntheticsInfoHeader.SupportedHeaderVersion, metadata.SyntheticsType, metadata.SyntheticsInitiator, metadata.SyntheticsAttributes);
+
             var obfuscatedHeader = syntheticsHeader.TryGetObfuscated();
             if (obfuscatedHeader == null)
                 return Enumerable.Empty<KeyValuePair<string, string>>();
 
-            return new[]
+            var infoHeader = syntheticsInfoHeader.TryGet();
+            if (infoHeader == null)
             {
-                new KeyValuePair<string, string>(SyntheticsHeader.HeaderKey, obfuscatedHeader)
-            };
+                return new[]
+                {
+                    new KeyValuePair<string, string>(SyntheticsHeader.HeaderKey, obfuscatedHeader)
+                };
+            }
+            else
+            {
+                return new[]
+                {
+                    new KeyValuePair<string, string>(SyntheticsHeader.HeaderKey, obfuscatedHeader),
+                    new KeyValuePair<string, string>(SyntheticsInfoHeader.HeaderKey, infoHeader)
+                };
+            }
         }
 
         public SyntheticsHeader TryDecodeInboundRequestHeaders<T>(T carrier, Func<T, string, IEnumerable<string>> getter)
@@ -57,6 +72,16 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Synthetics
                 return null;
 
             return SyntheticsHeader.TryCreate(_configurationService.Configuration.TrustedAccountIds, syntheticsDataHttpHeader, _configurationService.Configuration.EncodingKey);
+        }
+
+        public SyntheticsInfoHeader GetInfoHeaders<T>(T carrier, Func<T, string, IEnumerable<string>> getter)
+        {
+            var syntheticsInfoDataHttpHeader = getter(carrier, SyntheticsInfoHeader.HeaderKey)?.FirstOrDefault();
+
+            if (syntheticsInfoDataHttpHeader == null)
+                return null;
+
+            return SyntheticsInfoHeader.TryCreate(syntheticsInfoDataHttpHeader);
         }
     }
 }

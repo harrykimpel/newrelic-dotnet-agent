@@ -7,6 +7,7 @@ using NewRelic.Agent.Core.Metrics;
 using NewRelic.Agent.Core.Transactions;
 using NewRelic.Agent.Core.Aggregators;
 using NewRelic.Agent.Core.Attributes;
+using Grpc.Core;
 
 namespace NewRelic.Agent.Core.Transformers.TransactionTransformer
 {
@@ -179,6 +180,21 @@ namespace NewRelic.Agent.Core.Transformers.TransactionTransformer
 
                 _attribDefs.SyntheticsMonitorId.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsMonitorId);
                 _attribDefs.SyntheticsMonitorIdForTraces.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsMonitorId);
+
+                _attribDefs.SyntheticsType.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsType);
+                _attribDefs.SyntheticsTypeForTraces.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsType);
+
+                _attribDefs.SyntheticsInitiator.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsInitiator);
+                _attribDefs.SyntheticsInitiatorForTraces.TrySetValue(attribValues, immutableTransaction.TransactionMetadata.SyntheticsInitiator);
+
+                if (immutableTransaction.TransactionMetadata.SyntheticsAttributes != null)
+                {
+                    foreach (var attrib in immutableTransaction.TransactionMetadata.SyntheticsAttributes)
+                    {
+                        _attribDefs.GetSyntheticsInfoAttribute(attrib.Key).TrySetValue(attribValues, attrib.Value);
+                        _attribDefs.GetSyntheticsInfoAttributeForTraces(attrib.Key).TrySetValue(attribValues, attrib.Value);
+                    }
+                }
             }
         }
 
