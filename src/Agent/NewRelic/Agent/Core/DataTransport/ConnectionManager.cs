@@ -278,17 +278,17 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private void OnStartAgent(StartAgentEvent eventData)
         {
-            Task.Run(StartAsync).GetAwaiter().GetResult();
+            Task.Run(StartAsync).Wait();
         }
 
         private void OnRestartAgent(RestartAgentEvent eventData)
         {
-            Task.Run(ReconnectAsync).GetAwaiter().GetResult();
+            Task.Run(ReconnectAsync).Wait();
         }
 
         private void OnCleanShutdown(CleanShutdownEvent eventData)
         {
-            Task.Run(DisconnectAsync).GetAwaiter().GetResult();
+            Task.Run(DisconnectAsync).Wait();
         }
 
         #endregion Event handlers

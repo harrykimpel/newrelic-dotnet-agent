@@ -64,7 +64,7 @@ namespace NewRelic.Agent.Core.Aggregators
             if (!(uptime.TotalMilliseconds > _configuration.CollectorSendDataOnExitThreshold))
                 return;
 
-            Task.Run(HarvestAsync).GetAwaiter().GetResult();
+            Task.Run(HarvestAsync).Wait();
         }
 
         public override void Dispose()

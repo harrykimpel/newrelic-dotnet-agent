@@ -33,7 +33,7 @@ namespace NewRelic.Agent.Core.Commands
             _scheduler.ExecuteEvery(GetAndExecuteAgentCommandsAction, _configurationService.Configuration.GetAgentCommandsCycle);
         }
 
-        private void GetAndExecuteAgentCommandsAction() => Task.Run(GetAndExecuteAgentCommandsAsync).GetAwaiter().GetResult();
+        private void GetAndExecuteAgentCommandsAction() => Task.Run(GetAndExecuteAgentCommandsAsync).Wait();
 
         public override void Dispose()
         {
