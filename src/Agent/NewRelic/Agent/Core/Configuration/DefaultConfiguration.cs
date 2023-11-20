@@ -3,7 +3,7 @@
 
 using NewRelic.Agent.Configuration;
 using NewRelic.Agent.Core.Config;
-using NewRelic.Agent.Core.Metric;
+using NewRelic.Agent.Core.Metrics;
 using NewRelic.Agent.Helpers;
 using NewRelic.Core;
 using NewRelic.Core.Logging;
@@ -1247,7 +1247,16 @@ namespace NewRelic.Agent.Core.Configuration
 
         public virtual string EntityGuid { get { return _serverConfiguration.EntityGuid; } }
 
-        public virtual bool HighSecurityModeEnabled => _localConfiguration.highSecurity.enabled;
+        private bool? _highSecurityModeEnabled;
+        public virtual bool HighSecurityModeEnabled
+        {
+            get
+            {
+                _highSecurityModeEnabled ??= EnvironmentOverrides(_localConfiguration.highSecurity.enabled, "NEW_RELIC_HIGH_SECURITY");
+
+                return _highSecurityModeEnabled.Value;
+            }
+        }
 
 
         private BoolConfigurationItem _customInstrumentationEditorIsEnabled;
@@ -1772,7 +1781,6 @@ namespace NewRelic.Agent.Core.Configuration
             return new RecordSqlConfigurationItem(localRecordSqlString, LocalConfigSource);
         }
 
-        public virtual TimeSpan TransactionTracerStackThreshold { get { return ServerOverrides((TimeSpanExtensions.FromSeconds(_serverConfiguration.RpmConfig.TransactionTracerStackThreshold)), TimeSpan.FromMilliseconds(_localConfiguration.transactionTracer.stackTraceThreshold)); } }
         public virtual int TransactionTracerMaxStackTraces { get { return _localConfiguration.transactionTracer.maxStackTrace; } }
         public virtual IEnumerable<Regex> RequestPathExclusionList
         {
@@ -2077,7 +2085,6 @@ namespace NewRelic.Agent.Core.Configuration
             _diagnosticsCaptureAgentTimingFrequency = configFreq;
         }
 
-
         private bool? _forceSynchronousTimingCalculationHttpClient;
         public bool ForceSynchronousTimingCalculationHttpClient
         {
@@ -2086,6 +2093,17 @@ namespace NewRelic.Agent.Core.Configuration
                 return _forceSynchronousTimingCalculationHttpClient.HasValue
                     ? _forceSynchronousTimingCalculationHttpClient.Value
                     : (_forceSynchronousTimingCalculationHttpClient = TryGetAppSettingAsBoolWithDefault("ForceSynchronousTimingCalculation.HttpClient", false)).Value;
+            }
+        }
+
+        private bool? _enableAspNetCore6PlusBrowserInjection;
+        public bool EnableAspNetCore6PlusBrowserInjection
+        {
+            get
+            {
+                return _enableAspNetCore6PlusBrowserInjection.HasValue
+                    ? _enableAspNetCore6PlusBrowserInjection.Value
+                    : (_enableAspNetCore6PlusBrowserInjection = TryGetAppSettingAsBoolWithDefault("EnableAspNetCore6PlusBrowserInjection", false)).Value;
             }
         }
 
@@ -2398,8 +2416,8 @@ namespace NewRelic.Agent.Core.Configuration
                     }
                     catch (Exception ex)
                     {
-                        Log.ErrorFormat("A Browser Monitoring Request Path failed regular expression parsing: {0}",
-                            p.regex, ex);
+                        Log.Error(ex, "A Browser Monitoring Request Path failed regular expression parsing: {0}",
+                            p.regex);
                     }
                 }
             }
@@ -2464,14 +2482,14 @@ namespace NewRelic.Agent.Core.Configuration
         {
             if (rule.Terms == null)
             {
-                Log.WarnFormat("Ignoring transaction_segment_term with null terms for prefix '{0}'", rule.Prefix);
+                Log.Warn("Ignoring transaction_segment_term with null terms for prefix '{0}'", rule.Prefix);
                 return null;
             }
 
             var prefix = TryGetValidPrefix(rule.Prefix);
             if (prefix == null)
             {
-                Log.WarnFormat("Ignoring transaction_segment_term with invalid prefix '{0}'", rule.Prefix);
+                Log.Warn("Ignoring transaction_segment_term with invalid prefix '{0}'", rule.Prefix);
                 return null;
             }
 
@@ -2732,7 +2750,7 @@ namespace NewRelic.Agent.Core.Configuration
             {
                 replacementText = $"Use {newPropertyName} instead.";
             }
-            Log.WarnFormat("Configuration property '{0}' is disabled (unused) and will be removed from the config schema in a future release.  {1}  See https://docs.newrelic.com/docs/agents/net-agent/configuration/net-agent-configuration/ for details.", disabledPropertyName, replacementText);
+            Log.Warn("Configuration property '{0}' is disabled (unused) and will be removed from the config schema in a future release.  {1}  See https://docs.newrelic.com/docs/agents/net-agent/configuration/net-agent-configuration/ for details.", disabledPropertyName, replacementText);
         }
 
         int? _databaseStatementCacheCapacity = null;

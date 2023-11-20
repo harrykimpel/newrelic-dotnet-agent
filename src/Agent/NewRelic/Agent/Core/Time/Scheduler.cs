@@ -72,7 +72,7 @@ namespace NewRelic.Agent.Core.Time
                 var existingTimer = _recurringTimers.GetValueOrDefault(action);
                 if (existingTimer != null)
                 {
-                    Log.Debug("Stopping existing timer for scheduled action");
+                    Log.Debug("Stopping existing timer for scheduled action for " + action.Method.DeclaringType.FullName + "." + action.Method.Name);
                     existingTimer.Dispose();
                 }
 
@@ -165,7 +165,7 @@ namespace NewRelic.Agent.Core.Time
                 }
                 catch (Exception exception)
                 {
-                    Log.Error(exception);
+                    Log.Error(exception, "CreateExecuteEveryTimer() failed");
                 }
                 finally
                 {
@@ -226,7 +226,7 @@ namespace NewRelic.Agent.Core.Time
                 }
                 catch (Exception exception)
                 {
-                    Log.Error(exception);
+                    Log.Error(exception, "Unexpected exception in CreateExecuteEveryAsyncTimer");
                 }
                 finally
                 {

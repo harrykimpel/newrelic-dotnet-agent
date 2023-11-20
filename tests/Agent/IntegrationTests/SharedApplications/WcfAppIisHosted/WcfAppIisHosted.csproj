@@ -32,7 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Properties\PublishProfiles\LocalDeploy.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -42,14 +41,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.6.40">
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.7.30">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\IntegrationTestHelpers\IntegrationTestHelpers.csproj" />
+    <ProjectReference Include="..\Common\SharedApplicationHelpers\SharedApplicationHelpers.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -78,7 +78,7 @@ namespace NewRelic.Agent.Core.Wrapper
 
                 if (trackedWrapper == null)
                 {
-                    Log.WarnFormat("WrapperMap.Get unexpectedly returned null for {0}.{1}({2}) in assembly [{3}] (requested wrapper name was {4}).",
+                    Log.Warn("WrapperMap.Get unexpectedly returned null for {0}.{1}({2}) in assembly [{3}] (requested wrapper name was {4}).",
                         instrumentedMethodInfo.Method.Type.FullName,
                         instrumentedMethodInfo.Method.MethodName,
                         instrumentedMethodInfo.Method.ParameterTypeNames,
@@ -142,7 +142,7 @@ namespace NewRelic.Agent.Core.Wrapper
                 }
             }
 
-            var methodCall = new MethodCall(instrumentedMethodInfo.Method, invocationTarget, methodArguments);
+            var methodCall = new MethodCall(instrumentedMethodInfo.Method, invocationTarget, methodArguments, instrumentedMethodInfo.IsAsync);
             var instrumentedMethodCall = new InstrumentedMethodCall(methodCall, instrumentedMethodInfo);
 
             // if the wrapper throws an exception when executing the pre-method code, make sure the wrapper isn't called again in the future

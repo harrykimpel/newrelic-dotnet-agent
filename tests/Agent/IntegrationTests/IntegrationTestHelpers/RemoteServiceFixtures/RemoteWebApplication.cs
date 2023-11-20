@@ -139,7 +139,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
                 new KeyValuePair<string, string>("key", "NewRelic.AppName"),
                 new KeyValuePair<string, string>("value", AppName),
             };
-            CommonUtils.ModifyOrCreateXmlAttributes(DestinationApplicationWebConfigFilePath, string.Empty, nodes, attributes);
+            XmlUtils.ModifyOrCreateXmlAttributes(DestinationApplicationWebConfigFilePath, string.Empty, nodes, attributes);
         }
 
         private void SetUpApplicationHostConfig()
@@ -168,7 +168,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
             {
                 new KeyValuePair<string, string>("physicalPath", path),
             };
-            CommonUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
+            XmlUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
         }
 
         private void SetSitePortInApplicationHostConfig()
@@ -184,9 +184,9 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
             };
             var attributes = new[]
             {
-                new KeyValuePair<string, string>("bindingInformation", string.Format(@"*:{0}:", Port)),
+                new KeyValuePair<string, string>("bindingInformation", string.Format(@"127.0.0.1:{0}:", Port)),
             };
-            CommonUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
+            XmlUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
         }
 
         private void SetApplicationPoolInApplicationHostConfig()
@@ -204,7 +204,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
             {
                 new KeyValuePair<string, string>("name", appPoolName),
             };
-            CommonUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
+            XmlUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
 
             nodes = new[]
             {
@@ -217,7 +217,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
             {
                 new KeyValuePair<string, string>("applicationPool", appPoolName),
             };
-            CommonUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
+            XmlUtils.ModifyOrCreateXmlAttributes(DestinationApplicationHostConfigFilePath, string.Empty, nodes, attributes);
         }
 
         private void WaitForHostedWebCoreToStartListening(Process process, bool captureStandardOutput)
@@ -253,7 +253,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
                 CapturedOutput.WriteProcessOutputToLog("[RemoteWebApplication]: WaitForHostedWebCoreToStartListening");
             }
 
-            Assert.True(false, "Remote process never generated a .pid file!");
+            Assert.Fail("Remote process never generated a .pid file!");
         }
     }
 }

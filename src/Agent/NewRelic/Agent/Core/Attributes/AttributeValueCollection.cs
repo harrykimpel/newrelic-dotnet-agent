@@ -286,7 +286,7 @@ namespace NewRelic.Agent.Core.Attributes
                     }
                     catch (Exception ex)
                     {
-                        Log.Finest($"{attribVal.AttributeDefinition.Classification} Attribute '{attribVal.AttributeDefinition.Name}' was not recorded - exception occurred while resolving value (lazy) - {ex}");
+                        Log.Finest(ex, "{attribVal.AttributeDefinition.Classification} Attribute '{attribVal.AttributeDefinition.Name}' was not recorded - exception occurred while resolving value (lazy)");
                         itemsToRemove.Add(attribVal);
                     }
                 }
@@ -475,58 +475,6 @@ namespace NewRelic.Agent.Core.Attributes
 
                 return !hasItem;
             }
-        }
-    }
-
-    public class NoOpAttributeValueCollection : IAttributeValueCollection
-    {
-        public AttributeDestinations[] TargetModelTypes { get; } = new[] { AttributeDestinations.None };
-        public AttributeDestinations TargetModelTypesAsFlags => AttributeDestinations.None;
-
-        public bool IsImmutable => false;
-
-        public int Count => 0;
-
-        private static IEnumerable<IAttributeValue> _emptyAttribValues = new List<IAttributeValue>();
-        private static IDictionary<string, object> _emptyAttribDic = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
-
-        public void MakeImmutable()
-        {
-        }
-
-        public IEnumerable<IAttributeValue> GetAttributeValues(AttributeClassification classification)
-        {
-            return _emptyAttribValues;
-        }
-
-        public void AddRange(IAttributeValueCollection fromCollection)
-        {
-            return;
-        }
-
-        public bool TrySetValue<TInput, TOutput>(AttributeDefinition<TInput, TOutput> attribDef, TOutput value)
-        {
-            return false;
-        }
-
-        public bool TrySetValue<TInput, TOutput>(AttributeDefinition<TInput, TOutput> attribDef, Lazy<object> lazyImpl)
-        {
-            return false;
-        }
-
-        public bool TrySetValue(IAttributeValue attrib)
-        {
-            return false;
-        }
-
-        public IDictionary<string, object> GetAttributeValuesDic(AttributeClassification classification)
-        {
-            return _emptyAttribDic;
-        }
-
-        public IDictionary<string, object> GetAllAttributeValuesDic()
-        {
-            return _emptyAttribDic;
         }
     }
 }

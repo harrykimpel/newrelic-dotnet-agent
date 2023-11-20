@@ -4,7 +4,6 @@
 using NewRelic.Agent.Core.AgentHealth;
 using NewRelic.Agent.Core.Aggregators;
 using NewRelic.Agent.Core.JsonConverters;
-using NewRelic.Agent.Core.Metric;
 using NewRelic.Agent.Core.Metrics;
 using NewRelic.Agent.Core.Samplers;
 using NewRelic.Agent.Core.Transformers.TransactionTransformer;
@@ -16,7 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using InternalMetricName = NewRelic.Agent.Core.Metric.MetricName;
+using InternalMetricName = NewRelic.Agent.Core.Metrics.MetricName;
 
 namespace NewRelic.Agent.Core.WireModels
 {
@@ -299,6 +298,19 @@ namespace NewRelic.Agent.Core.WireModels
 
             #endregion
 
+            #region Kafka metrics
+
+            public static void TryBuildKafkaMessagesReceivedMetric(string transactionName, int count, TransactionMetricStatsCollection txStats)
+            {
+                var parts = transactionName.Split('/');
+                var proposedName = MetricNames.GetKafkaMessagesReceivedPerConsume(parts.Last());
+                var data = MetricDataWireModel.BuildCountData(count);
+                txStats.MergeUnscopedStats(proposedName, data);
+                txStats.MergeScopedStats(proposedName, data);
+            }
+
+            #endregion Kafka metrics
+
             #endregion Transaction builders
 
             #region Segment builders
@@ -335,6 +347,16 @@ namespace NewRelic.Agent.Core.WireModels
                 TimeSpan totalTime, TimeSpan totalExclusiveTime, TransactionMetricStatsCollection txStats)
             {
                 var proposedName = MetricNames.GetMessageBroker(destinationType, action, vendor, destination);
+                var data = MetricDataWireModel.BuildTimingData(totalTime, totalExclusiveTime);
+                txStats.MergeScopedStats(proposedName, data);
+                txStats.MergeUnscopedStats(proposedName, data);
+            }
+
+            public static void TryBuildMessageBrokerSerializationSegmentMetric(string vendor, string destination,
+                MetricNames.MessageBrokerDestinationType destinationType, MetricNames.MessageBrokerAction action, string kind,
+                TimeSpan totalTime, TimeSpan totalExclusiveTime, TransactionMetricStatsCollection txStats)
+            {
+                var proposedName = MetricNames.GetMessageBrokerSerialization(destinationType, action, vendor, destination, kind);
                 var data = MetricDataWireModel.BuildTimingData(totalTime, totalExclusiveTime);
                 txStats.MergeScopedStats(proposedName, data);
                 txStats.MergeUnscopedStats(proposedName, data);
@@ -986,6 +1008,18 @@ namespace NewRelic.Agent.Core.WireModels
                 const string proposedName = MetricNames.SupportabilityLoggingEventsDropped;
                 var data = MetricDataWireModel.BuildCountData(droppedCount);
                 return BuildMetric(_metricNameService, proposedName, null, data);
+            }
+
+            public MetricWireModel TryBuildCountMetric(string metricName, long count)
+            {
+                var data = MetricDataWireModel.BuildCountData(count);
+                return BuildMetric(_metricNameService, metricName, null, data);
+            }
+
+            public MetricWireModel TryBuildByteMetric(string metricName, long totalBytes, long? exclusiveBytes)
+            {
+                var data = MetricDataWireModel.BuildByteData(totalBytes, exclusiveBytes);
+                return BuildMetric(_metricNameService, metricName, null, data);
             }
 
             #endregion

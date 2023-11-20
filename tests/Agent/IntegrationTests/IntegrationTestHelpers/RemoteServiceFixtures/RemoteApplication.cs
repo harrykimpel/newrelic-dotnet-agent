@@ -9,6 +9,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
@@ -213,7 +214,7 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
 
         public int Port => _port ?? (_port = RandomPortGenerator.NextPort()).Value;
 
-        public readonly string DestinationServerName = Dns.GetHostName().ToLower();
+        public static readonly string DestinationServerName = "127.0.0.1";
 
         private NewRelicConfigModifier _newRelicConfigModifier;
         public NewRelicConfigModifier NewRelicConfig => _newRelicConfigModifier ?? (_newRelicConfigModifier = new NewRelicConfigModifier(DestinationNewRelicConfigFilePath));
@@ -371,6 +372,8 @@ namespace NewRelic.Agent.IntegrationTestHelpers.RemoteServiceFixtures
             {
                 try
                 {
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
                     //The test runner opens an event created by the app server and set it to signal the app server that the test has finished. 
                     var remoteAppEvent = EventWaitHandle.OpenExisting(shutdownChannelName);
                     remoteAppEvent.Set();

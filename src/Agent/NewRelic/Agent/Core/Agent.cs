@@ -10,13 +10,11 @@ using NewRelic.Agent.Core.Attributes;
 using NewRelic.Agent.Core.BrowserMonitoring;
 using NewRelic.Agent.Core.DistributedTracing;
 using NewRelic.Agent.Core.Logging;
-using NewRelic.Agent.Core.Metric;
 using NewRelic.Agent.Core.Metrics;
 using NewRelic.Agent.Core.Segments;
 using NewRelic.Agent.Core.Transactions;
 using NewRelic.Agent.Core.Transformers.TransactionTransformer;
 using NewRelic.Agent.Core.Utilities;
-using NewRelic.Agent.Core.Utils;
 using NewRelic.Agent.Core.WireModels;
 using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Builders;
 using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.CrossApplicationTracing;
@@ -30,8 +28,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mime;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core
 {
@@ -118,6 +119,11 @@ namespace NewRelic.Agent.Core
         public ITransaction CreateTransaction(MessageBrokerDestinationType destinationType, string brokerVendorName, string destination, Action wrapperOnCreate)
         {
             return CreateTransaction(TransactionName.ForBrokerTransaction(destinationType, brokerVendorName, destination), true, wrapperOnCreate ?? NoOpWrapperOnCreate);
+        }
+
+        public ITransaction CreateKafkaTransaction(MessageBrokerDestinationType destinationType, string brokerVendorName, string destination, Action wrapperOnCreate)
+        {
+            return CreateTransaction(TransactionName.ForKafkaBrokerTransaction(destinationType, brokerVendorName, destination), true, wrapperOnCreate ?? NoOpWrapperOnCreate);
         }
 
         public ITransaction CreateTransaction(bool isWeb, string category, string transactionDisplayName, bool doNotTrackAsUnitOfWork, Action wrapperOnCreate)
@@ -215,7 +221,7 @@ namespace NewRelic.Agent.Core
                     var vendorValidationResult = vendorValidateShouldExplain();
                     if (!vendorValidationResult.IsValid)
                     {
-                        Log.DebugFormat("Failed vendor condition for executing explain plan: {0}", vendorValidationResult.ValidationMessage);
+                        Log.Debug("Failed vendor condition for executing explain plan: {0}", vendorValidationResult.ValidationMessage);
                         return false;
                     }
                 }
@@ -283,7 +289,7 @@ namespace NewRelic.Agent.Core
                 return;
             }
 
-            Log.Error($"An exception occurred in a wrapper: {exception}");
+            Log.Error(exception, "An exception occurred in a wrapper");
         }
 
         #endregion Error handling
@@ -302,6 +308,28 @@ namespace NewRelic.Agent.Core
                 return null;
             }
 
+            var script = TryGetRUMScriptInternal(contentType, requestPath);
+            return script == null ? null : new BrowserMonitoringStreamInjector(() => script, stream, encoding);
+        }
+
+        public async Task TryInjectBrowserScriptAsync(string contentType, string requestPath, byte[] buffer, Stream baseStream)
+        {
+            var transaction = _transactionService.GetCurrentInternalTransaction();
+
+            var script = TryGetRUMScriptInternal(contentType, requestPath);
+            var rumBytes = script == null ? null : Encoding.UTF8.GetBytes(script);
+
+            if (rumBytes == null)
+            {
+                transaction.LogFinest("Skipping RUM Injection: No script was available.");
+                await baseStream.WriteAsync(buffer, 0, buffer.Length);
+            }
+            else
+                await BrowserScriptInjectionHelper.InjectBrowserScriptAsync(buffer, baseStream, rumBytes, transaction);
+        }
+
+        private string TryGetRUMScriptInternal(string contentType, string requestPath)
+        {
             if (contentType == null)
             {
                 return null;
@@ -329,19 +357,13 @@ namespace NewRelic.Agent.Core
                 // Once the transaction name is used for RUM it must be frozen
                 transaction.CandidateTransactionName.Freeze(TransactionNameFreezeReason.AutoBrowserScriptInjection);
                 var script = _browserMonitoringScriptMaker.GetScript(transaction, null);
-                if (script == null)
-                {
-                    return null;
-                }
 
-                return new BrowserMonitoringStreamInjector(() => script, stream, encoding);
+                return script;
             }
             catch (Exception ex)
             {
-                Log.Error($"RUM: Failed to build Browser Monitoring agent script: {ex}");
-                {
-                    return null;
-                }
+                Log.Error(ex, "RUM: Failed to build Browser Monitoring agent script");
+                return null;
             }
         }
 
@@ -403,9 +425,19 @@ namespace NewRelic.Agent.Core
             set { _stackExchangeRedisCache = value; }
         }
 
-        public void RecordSupportabilityMetric(string metricName, int count)
+        public void RecordSupportabilityMetric(string metricName, long count = 1)
         {
             _agentHealthReporter.ReportSupportabilityCountMetric(metricName, count);
+        }
+
+        public void RecordCountMetric(string metricName, long count = 1)
+        {
+            _agentHealthReporter.ReportCountMetric(metricName, count);
+        }
+
+        public void RecordByteMetric(string metricName, long totalBytes, long? exclusiveBytes = null)
+        {
+            _agentHealthReporter.ReportByteMetric(metricName, totalBytes, exclusiveBytes);
         }
 
         public void RecordLogMessage(string frameworkName, object logEvent, Func<object, DateTime> getTimestamp, Func<object, object> getLevel, Func<object, string> getLogMessage, Func<object, Exception> getLogException, Func<object, Dictionary<string, object>> getContextData, string spanId, string traceId)
@@ -441,14 +473,15 @@ namespace NewRelic.Agent.Core
 
                 var logMessage = getLogMessage(logEvent);
                 var logException = getLogException(logEvent);
+                var logContextData = _configurationService.Configuration.ContextDataEnabled ? getContextData(logEvent) : null;
 
-                // exit quickly if the message and exception are missing
-                if (string.IsNullOrWhiteSpace(logMessage) && logException is null)
+                // exit quickly if the message, exception and context data are missing
+                if (string.IsNullOrWhiteSpace(logMessage) && logException is null && (logContextData is null || logContextData.Count == 0))
                 {
+                    _agentHealthReporter.ReportLoggingEventsEmpty();
                     return;
                 }
 
-                var logContextData = _configurationService.Configuration.ContextDataEnabled ? getContextData(logEvent) : null;
                 var timestamp = getTimestamp(logEvent).ToUnixTimeMilliseconds();
 
                 LogEventWireModel logEventWireModel;

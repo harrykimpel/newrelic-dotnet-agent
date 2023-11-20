@@ -1,7 +1,8 @@
 // Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using NewRelic.Agent.Core.Metric;
+using NewRelic.Agent.Core.Metrics;
+using NewRelic.Agent.Core.Utilities;
 using NewRelic.Agent.Extensions.Providers.Wrapper;
 using System;
 using System.Text;
@@ -65,6 +66,7 @@ namespace NewRelic.Agent.Core.Transactions
             var trxName = new TransactionName(true, MetricNames.Uri, normalizedUri);
             return trxName;
         }
+
         public static TransactionName ForBrokerTransaction(MessageBrokerDestinationType type, string vendor, string destination)
         {
             var trxName = new StringBuilder(vendor)
@@ -82,6 +84,29 @@ namespace NewRelic.Agent.Core.Transactions
                     .Append(MetricNames.PathSeparator)
                     .Append(destination);
             }
+
+            return new TransactionName(false, MetricNames.Message, trxName.ToString());
+        }
+
+        /// <summary>
+        /// Builds a transaction name that conforms to the Kafka spec
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="vendor"></param>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        public static TransactionName ForKafkaBrokerTransaction(MessageBrokerDestinationType type, string vendor, string destination)
+        {
+            var trxName = new StringBuilder(vendor)
+                .Append(MetricNames.PathSeparator)
+                .Append(EnumNameCache<MessageBrokerDestinationType>.GetName(type))
+                .Append(MetricNames.PathSeparator)
+                .Append(MetricNames.KafkaMessageBrokerConsume)
+                .Append(MetricNames.PathSeparator)
+                .Append(MetricNames.MessageBrokerNamed)
+                .Append(MetricNames.PathSeparator);
+
+            trxName.Append(string.IsNullOrWhiteSpace(destination) ? MetricNames.MessageBrokerTemp : destination);
 
             return new TransactionName(false, MetricNames.Message, trxName.ToString());
         }

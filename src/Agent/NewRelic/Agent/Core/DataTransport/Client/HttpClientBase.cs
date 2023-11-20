@@ -44,9 +44,9 @@ namespace NewRelic.Agent.Core.DataTransport.Client
                     await Dns.GetHostEntryAsync(host).ConfigureAwait(false);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Log.ErrorFormat("Unable to resolve host name \"{0}\"", host);
+                Log.Error(ex, "Unable to resolve host name \"{0}\"", host);
             }
 
             await TestConnectionAsync().ConfigureAwait(false);
@@ -68,7 +68,7 @@ namespace NewRelic.Agent.Core.DataTransport.Client
 #else
                 await _lazyHttpClient.Value.GetAsync(testAddress).ConfigureAwait(false);
 #endif
-                Log.InfoFormat("Connection test to \"{0}\" succeeded", testAddress);
+                Log.Info("Connection test to \"{0}\" succeeded", testAddress);
             }
             catch (Exception)
             {

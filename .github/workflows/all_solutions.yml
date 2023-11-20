@@ -1,6 +1,5 @@
 name: .NET Agent All Solutions Build
 
-# Does not run on PUSH since we have already ran all the test
 on:
   pull_request:
     branches:
@@ -9,12 +8,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      build-for-release:
-        description: 'This is a Release build. Use the "real" code signing certificate.'
-        required: true
-        type: boolean
-        default: false
 
   schedule:
     - cron: "0 9 * * 1-5"
@@ -33,10 +26,23 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  check-modified-files:
+    name: Check if source files were modified, skip remaining jobs if not
+    uses: ./.github/workflows/check_modified_files.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: read
+
+
   # This builds both FullAgent and MSIInstaller since MSIInstaller requires FullAgent artifacts.
   build-fullagent-msi:
     name: Build FullAgent and MSIInstaller
     runs-on: windows-2022
+    needs: check-modified-files
+    # don't run this job if triggered by Dependabot, will cause all other jobs to be skipped as well
+    # run this job if non-workflow files were modified, or if triggered by a release, a manual execution or schedule
+    if: github.actor != 'dependabot[bot]' && (needs.check-modified-files.outputs.non-workflow-files-changed == 'true' || github.event.release || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
 
     env:
       fullagent_solution_path: ${{ github.workspace }}\FullAgent.sln
@@ -47,19 +53,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@1ff57057b5cfdc39105cd07a01d78e9b0ea0c14c # v1.3.1
-
       - name: Build FullAgent.sln
         run: |
-          Write-Host "List NuGet Sources"
-          dotnet nuget list source # For unknown reasons, this step is necessary to avoid subsequent problems with NuGet package restore
-          Write-Host "MSBuild.exe -restore -m -p:Configuration=Release -p:AllowUnsafeBlocks=true ${{ env.fullagent_solution_path }}"
-          MSBuild.exe -restore -m -p:Configuration=Release -p:AllowUnsafeBlocks=true ${{ env.fullagent_solution_path }}
+          Write-Host "dotnet build --force --configuration Release -p:AllowUnsafeBlocks=true ${{ env.fullagent_solution_path }}"
+          dotnet build --force --configuration Release -p:AllowUnsafeBlocks=true ${{ env.fullagent_solution_path }}
         shell: powershell
 
       - name: Create agentVersion
@@ -68,16 +69,16 @@ jobs:
           $agentVersion = (Get-Item "${{ github.workspace }}\src\_build\AnyCPU-Release\NewRelic.Agent.Core\net462\NewRelic.Agent.Core.dll").VersionInfo.FileVersion
           echo "version=$agentVersion" >> $env:GITHUB_OUTPUT
         shell: powershell
-
+          
       - name: Archive NewRelic.Agent.Extensions
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: NewRelic.Agent.Extensions
           path: ${{ github.workspace }}\src\Agent\NewRelic\Agent\Extensions\NewRelic.Agent.Extensions\bin\Release
           if-no-files-found: error
 
       - name: Archive FullAgent Home folders
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: homefolders
           path: |
@@ -90,7 +91,6 @@ jobs:
           if-no-files-found: error
 
       - name: Convert Code Signing Certificate Into File
-        if: ${{ github.event.release || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'true') }}
         id: write_cert
         run: |
           $filePath = '${{ github.workspace }}\newrelic_code_sign_cert.pfx'
@@ -100,18 +100,14 @@ jobs:
         shell: powershell
 
       - name: Install Code Signing Certificate
-        if: ${{ github.event.release || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'true') }}
         run: |
           Write-Host "certutil.exe -f -user -p <passphrase> -importPFX ${{ steps.write_cert.outputs.filePath }} NoRoot"
           certutil.exe -f -user -p ${{ secrets.CERT_PASSPHRASE }} -importPFX ${{ steps.write_cert.outputs.filePath }} NoRoot
         shell: powershell
 
-      - name: Create Self-signed code signing cert
-        if: ${{ (github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'false') || github.event_name == 'schedule' }}
-        run: |
-          Write-Host "New-SelfSignedCertificate -DnsName "Self-signed code signing cert" -Type CodeSigning -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(100)"
-          New-SelfSignedCertificate -DnsName "Self-signed code signing cert" -Type CodeSigning -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(100)
-        shell: powershell
+
+      - name: Add msbuild to PATH (required for MsiInstaller build)
+        uses: microsoft/setup-msbuild@1ff57057b5cfdc39105cd07a01d78e9b0ea0c14c # v1.3.1        
 
       - name: Build MsiInstaller.sln x86
         run: |
@@ -126,14 +122,14 @@ jobs:
         shell: powershell
 
       - name: Archive msi _build Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: msi-build-folder-artifacts
           path: ${{ github.workspace }}\src\_build
           if-no-files-found: error
 
       - name: Archive NewRelic.OpenTracing.AmazonLambda.Tracer
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: NewRelic.OpenTracing.AmazonLambda.Tracer
           path: ${{ github.workspace }}\src\AwsLambda\AwsLambdaOpenTracer\bin\Release\netstandard2.0-ILRepacked
@@ -155,7 +151,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -177,7 +173,7 @@ jobs:
         shell: powershell
 
       - name: Archive Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integrationtests
           path: |
@@ -197,7 +193,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -215,7 +211,7 @@ jobs:
         shell: powershell
 
       - name: Archive Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: unboundedintegrationtests
           path: |
@@ -258,7 +254,8 @@ jobs:
           Logging.MaxSamplesStored, 
           Logging.MetricsAndForwarding, 
           Logging.ZeroMaxSamplesStored,
-          Owin, 
+          Owin,
+          MassTransit, 
           ReJit.NetCore, 
           ReJit.NetFramework, 
           RequestHandling, 
@@ -285,7 +282,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -365,7 +362,7 @@ jobs:
 
       - name: Archive IntegrationTestWorkingDirectory on Failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integration-test-artifacts
           path: |
@@ -375,7 +372,7 @@ jobs:
 
       - name: Archive Test Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integration-test-artifacts
           path: C:\IntegrationTestWorkingDirectory\TestResults\**\*TestResults.trx
@@ -395,12 +392,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@cba0d00b1fc9a034e1e642ea0f1103c282990604 # v2.5.0
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -411,7 +408,7 @@ jobs:
           path: src/Agent
 
       - name: Run test commands
-        uses: uraimo/run-on-arch-action@a8003307a739516fdd80ee6d3da8924db811b8da # v2.5.0
+        uses: uraimo/run-on-arch-action@4ed76f16f09d12e83abd8a49e1ac1e5bf08784d4 # v2.5.1
         with:
           arch: aarch64
           distro: ubuntu18.04
@@ -442,14 +439,14 @@ jobs:
 
       - name: Archive IntegrationTestWorkingDirectory on Failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integration-test-artifacts-linux-arm64
           path: ${{ env.test_path }}/**/*
           if-no-files-found: error
 
       - name: Archive Test Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         if: ${{ always() }}
         with:
           name: integration-test-artifacts-linux-arm64
@@ -473,7 +470,8 @@ jobs:
             MySql,
             NServiceBus,
             NServiceBus5,
-            Oracle,
+            # Disabling Oracle temporarily
+            #Oracle,
             Postgres,
             RabbitMq,
             Redis,
@@ -493,7 +491,7 @@ jobs:
         shell: powershell
 
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -544,7 +542,11 @@ jobs:
 
       - name: Start Local CosmosDB Emulator for CosmosDB Tests
         if: matrix.namespace == 'CosmosDB'
-        uses: southpolesteve/cosmos-emulator-github-action@2b1168b52481f972890f5da2ff8f9d2cc3707804 # v1
+        run: |
+          Write-Host "Launching Cosmos DB Emulator"
+          Import-Module "$env:ProgramFiles\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
+          Start-CosmosDbEmulator
+        shell: pwsh
 
       - name: Run Unbounded Integration Tests
         run: |
@@ -572,7 +574,7 @@ jobs:
 
       - name: Archive IntegrationTestWorkingDirectory on Failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integration-test-artifacts
           path: |
@@ -582,7 +584,7 @@ jobs:
 
       - name: Archive Test Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: integration-test-artifacts
           path: C:\IntegrationTestWorkingDirectory\TestResults\**\*TestResults.trx
@@ -590,19 +592,18 @@ jobs:
 
   create-package-rpm:
     needs: build-fullagent-msi
-    if: ${{ github.event.release || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'true') }}
     name: Create RPM Package
     runs-on: ubuntu-22.04
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@cba0d00b1fc9a034e1e642ea0f1103c282990604 # v2.5.0
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
         with:
           disable-sudo: true
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -650,7 +651,7 @@ jobs:
         shell: bash
 
       - name: Archive RPM Package Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: rpm-build-artifacts
           path: ${{ github.workspace }}/src/_build/CoreArtifacts
@@ -658,19 +659,18 @@ jobs:
 
   create-package-deb:
     needs: build-fullagent-msi
-    if: ${{ github.event.release || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'true') }}
     name: Create Debian package
     runs-on: ubuntu-22.04
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@cba0d00b1fc9a034e1e642ea0f1103c282990604 # v2.5.0
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
         with:
           disable-sudo: true
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -704,7 +704,7 @@ jobs:
         shell: bash
 
       - name: Archive Debian Package Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: debian-build-artifacts
           path: ${{ github.workspace }}/src/_build/CoreArtifacts
@@ -712,13 +712,12 @@ jobs:
 
   run-artifactbuilder:
     needs: [create-package-rpm, create-package-deb]
-    if: ${{ github.event.release || (github.event_name == 'workflow_dispatch' && github.event.inputs.build-for-release == 'true') }}
     name: Run ArtifactBuilder
     runs-on: windows-2022
 
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3        
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -772,10 +771,25 @@ jobs:
         shell: powershell
 
       - name: Archive Deploy Artifacts
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: deploy-artifacts
           path: |
             ${{ github.workspace }}\build\BuildArtifacts
             ${{ github.workspace }}\deploy
           if-no-files-found: error
+
+  # This job is necessary in order for us to have a branch protection rule for tests with a matrix
+  # if any of the matrix tests fail, this job fails and the branch protection rule keeps the PR from merging
+  integration-test-status:
+    name: Check Test Matrix Status
+    runs-on: ubuntu-latest
+    needs: [run-integration-tests, run-unbounded-tests]
+    if: always()
+    steps:
+      - name: Successful test run
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: exit 0
+      - name: Failing test run
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1          

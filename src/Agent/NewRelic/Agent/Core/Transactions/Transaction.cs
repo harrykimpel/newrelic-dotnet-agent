@@ -11,9 +11,9 @@ using NewRelic.Agent.Core.Database;
 using NewRelic.Agent.Core.DistributedTracing;
 using NewRelic.Agent.Core.Errors;
 using NewRelic.Agent.Core.Events;
-using NewRelic.Agent.Core.Metric;
+using NewRelic.Agent.Core.Metrics;
 using NewRelic.Agent.Core.Segments;
-using NewRelic.Agent.Core.Timing;
+using NewRelic.Agent.Core.Time;
 using NewRelic.Agent.Core.Transformers.TransactionTransformer;
 using NewRelic.Agent.Core.Utilities;
 using NewRelic.Agent.Core.WireModels;
@@ -257,6 +257,26 @@ namespace NewRelic.Agent.Core.Transactions
             return segment;
         }
 
+        public ISegment StartMessageBrokerSerializationSegment(MethodCall methodCall, MessageBrokerDestinationType destinationType, MessageBrokerAction operation, string brokerVendorName, string destinationName, string kind)
+        {
+            if (Ignored)
+                return Segment.NoOpSegment;
+            if (brokerVendorName == null)
+                throw new ArgumentNullException("brokerVendorName");
+            if (string.IsNullOrEmpty(kind))
+                throw new ArgumentNullException("kind");
+
+
+            var segment = StartSegmentImpl(methodCall);
+            var messageBrokerSegmentData = CreateMessageBrokerSerializationSegmentData(destinationType, operation, brokerVendorName, destinationName, kind);
+
+            segment.SetSegmentData(messageBrokerSegmentData);
+
+            if (Log.IsFinestEnabled) LogFinest($"Segment start {{{segment.ToStringForFinestLogging()}}}");
+
+            return segment;
+        }
+
         public AbstractSegmentData CreateMessageBrokerSegmentData(MessageBrokerDestinationType destinationType, MessageBrokerAction operation, string brokerVendorName, string destinationName)
         {
             if (brokerVendorName == null)
@@ -266,6 +286,17 @@ namespace NewRelic.Agent.Core.Transactions
             var destType = AgentWrapperApiEnumToMetricNamesEnum(destinationType);
 
             return new MessageBrokerSegmentData(brokerVendorName, destinationName, destType, action);
+        }
+
+        public AbstractSegmentData CreateMessageBrokerSerializationSegmentData(MessageBrokerDestinationType destinationType, MessageBrokerAction operation, string brokerVendorName, string destinationName, string kind)
+        {
+            if (brokerVendorName == null)
+                throw new ArgumentNullException("brokerVendorName");
+
+            var action = AgentWrapperApiEnumToMetricNamesEnum(operation);
+            var destType = AgentWrapperApiEnumToMetricNamesEnum(destinationType);
+
+            return new MessageBrokerSerializationSegmentData(brokerVendorName, destinationName, destType, action, kind);
         }
 
         /// <summary>
@@ -332,13 +363,13 @@ namespace NewRelic.Agent.Core.Transactions
             var typeName = methodCall.Method.Type.FullName ?? "[unknown]";
             var methodName = methodCall.Method.MethodName;
             var invocationTargetHashCode = RuntimeHelpers.GetHashCode(methodCall.InvocationTarget);
-            return new MethodCallData(typeName, methodName, invocationTargetHashCode);
+            return new MethodCallData(typeName, methodName, invocationTargetHashCode, methodCall.IsAsync);
         }
 
         // Used for StackExchange.Redis since we will not be instrumenting any methods when creating the many DataStore segments
         private static MethodCallData GetMethodCallData(string typeName, string methodName, int invocationTargetHashCode)
         {
-            return new MethodCallData(typeName, methodName, invocationTargetHashCode);
+            return new MethodCallData(typeName, methodName, invocationTargetHashCode, true); // assume async
         }
 
         private static MetricNames.MessageBrokerDestinationType AgentWrapperApiEnumToMetricNamesEnum(
@@ -400,7 +431,7 @@ namespace NewRelic.Agent.Core.Transactions
                 }
                 catch (Exception e)
                 {
-                    Log.DebugFormat("Error while normalizing query parameters: {0}", e);
+                    Log.Debug(e, "Error while normalizing query parameters");
                 }
             }
 
@@ -786,6 +817,12 @@ namespace NewRelic.Agent.Core.Transactions
             SetTransactionName(trxName, priority);
         }
 
+        public void SetKafkaMessageBrokerTransactionName(MessageBrokerDestinationType destinationType, string brokerVendorName, string destination = null, TransactionNamePriority priority = TransactionNamePriority.Uri)
+        {
+            var trxName = TransactionName.ForKafkaBrokerTransaction(destinationType, brokerVendorName, destination);
+            SetTransactionName(trxName, priority);
+        }
+
         public void SetOtherTransactionName(string category, string name, TransactionNamePriority priority = TransactionNamePriority.Uri)
         {
             var trxName = TransactionName.ForOtherTransaction(category, name);
@@ -921,7 +958,7 @@ namespace NewRelic.Agent.Core.Transactions
         private readonly ConcurrentList<Segment> _segments = new ConcurrentList<Segment>();
         public IList<Segment> Segments { get => _segments; }
 
-        private readonly ITimer _timer;
+        private readonly ISimpleTimer _timer;
 
         private TimeSpan? _forcedDuration;
 
@@ -965,7 +1002,7 @@ namespace NewRelic.Agent.Core.Transactions
         private volatile string _traceId;
 
         public Transaction(IConfiguration configuration, ITransactionName initialTransactionName,
-            ITimer timer, DateTime startTime, ICallStackManager callStackManager, IDatabaseService databaseService,
+            ISimpleTimer timer, DateTime startTime, ICallStackManager callStackManager, IDatabaseService databaseService,
             float priority, IDatabaseStatementParser databaseStatementParser, IDistributedTracePayloadHandler distributedTracePayloadHandler,
             IErrorService errorService, IAttributeDefinitions attribDefs)
         {

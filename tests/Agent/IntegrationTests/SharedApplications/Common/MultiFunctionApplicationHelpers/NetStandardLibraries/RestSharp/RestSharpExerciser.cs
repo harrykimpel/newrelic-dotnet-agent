@@ -1,4 +1,4 @@
-﻿// Copyright 2020 New Relic, Inc. All rights reserved.
+// Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -28,9 +28,9 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
         [LibraryMethod]
         [Transaction]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        public string SyncClient(int port, string method, bool generic)
+        public string SyncClient(string host, int port, string method, bool generic)
         {
-            var myHost = "localhost"; // Request.RequestUri.Host;
+            var myHost = host;
             var myPort = port;
             var client = new RestClient($"http://{myHost}:{myPort}");
 
@@ -67,9 +67,9 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
         [LibraryMethod]
         [Transaction]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        public async Task<string> AsyncAwaitClient(int port, string method, bool generic, bool cancelable)
+        public async Task<string> AsyncAwaitClient(string host, int port, string method, bool generic, bool cancelable)
         {
-            var myHost = "localhost"; // Request.RequestUri.Host;
+            var myHost = host;
             var myPort = port;
             var client = new RestClient($"http://{myHost}:{myPort}");
 
@@ -115,9 +115,9 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
         [LibraryMethod]
         [Transaction]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        public string TaskResultClient(int port, string method, bool generic, bool cancelable)
+        public string TaskResultClient(string host, int port, string method, bool generic, bool cancelable)
         {
-            var myHost = "localhost"; // Request.RequestUri.Host;
+            var myHost = host;
             var myPort = port;
             var client = new RestClient($"http://{myHost}:{myPort}");
 
@@ -166,9 +166,9 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
         [LibraryMethod]
         [Transaction]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        public async Task<string> RestSharpClientTaskCancelled(int port)
+        public async Task<string> RestSharpClientTaskCancelled(string host, int port)
         {
-            var myHost = "localhost"; // Request.RequestUri.Host;
+            var myHost = host;
             var myPort = port;
 
             var endpoint = "api/RestAPI/";
@@ -176,9 +176,11 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
 
             try
             {
-                var client = new RestClient($"http://{myHost}:{myPort}");
-                client.Timeout = 1;
-                var response = await client.ExecuteTaskAsync(new RestRequest(endpoint + "Get/" + id));
+                var client = new RestClient($"http://{myHost}:{myPort}")
+                {
+                    Timeout = 1
+                };
+                var response = await ExecuteAsync(client, new RestRequest(endpoint + "Get/" + id));
             }
             catch (Exception)
             {
@@ -190,37 +192,55 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
 
 #region Helpers
 
-        private Dictionary<string, IRestRequest> GetRequests(string endpoint, int id)
+        private static Dictionary<string, IRestRequest> GetRequests(string endpoint, int id)
         {
-            var requests = new Dictionary<string, IRestRequest>();
-            requests.Add("GET", new RestRequest(endpoint + "Get/" + id));
-            requests.Add("PUT", new RestRequest(endpoint + "Put/" + id, Method.PUT).AddJsonBody(new { CommonName = "Painted Bunting", BandingCode = "PABU" }));
-            requests.Add("DELETE", new RestRequest(endpoint + "Delete/" + id, Method.DELETE));
-            requests.Add("POST", new RestRequest(endpoint + "Post/", Method.POST).AddJsonBody(new { CommonName = "Painted Bunting", BandingCode = "PABU" }));
+            var requests = new Dictionary<string, IRestRequest>
+            {
+                { "GET", new RestRequest(endpoint + "Get/" + id) },
+                { "PUT", new RestRequest(endpoint + "Put/" + id, Method.PUT).AddJsonBody(new { CommonName = "Painted Bunting", BandingCode = "PABU" }) },
+                { "DELETE", new RestRequest(endpoint + "Delete/" + id, Method.DELETE) },
+                { "POST", new RestRequest(endpoint + "Post/", Method.POST).AddJsonBody(new { CommonName = "Painted Bunting", BandingCode = "PABU" }) }
+            };
             return requests;
         }
 
-        private Task<IRestResponse<T>> ExecuteAsyncGeneric<T>(RestClient client, IRestRequest request, CancellationTokenSource cancellationTokenSource = null)
+        private static Task<IRestResponse<T>> ExecuteAsyncGeneric<T>(RestClient client, IRestRequest request, CancellationTokenSource cancellationTokenSource = null)
         {
             if (cancellationTokenSource == null)
             {
+#if NET471
+                return client.ExecuteAsync<T>(request);
+#else
                 return client.ExecuteTaskAsync<T>(request);
+#endif
             }
 
+#if NET471
+            return client.ExecuteAsync<T>(request, cancellationTokenSource.Token);
+#else
             return client.ExecuteTaskAsync<T>(request, cancellationTokenSource.Token);
+#endif
         }
 
-        private Task<IRestResponse> ExecuteAsync(RestClient client, IRestRequest request, CancellationTokenSource cancellationTokenSource = null)
+        private static Task<IRestResponse> ExecuteAsync(RestClient client, IRestRequest request, CancellationTokenSource cancellationTokenSource = null)
         {
             if (cancellationTokenSource == null)
             {
+#if NET471
+                return client.ExecuteAsync(request);
+#else
                 return client.ExecuteTaskAsync(request);
+#endif
             }
 
+#if NET471
+            return client.ExecuteAsync(request, cancellationTokenSource.Token);
+#else
             return client.ExecuteTaskAsync(request, cancellationTokenSource.Token);
+#endif
         }
 
-#endregion
+        #endregion
 
     }
 }

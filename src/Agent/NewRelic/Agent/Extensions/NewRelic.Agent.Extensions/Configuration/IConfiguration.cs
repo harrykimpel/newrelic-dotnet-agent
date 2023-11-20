@@ -152,7 +152,6 @@ namespace NewRelic.Agent.Configuration
         int TransactionTracerMaxSegments { get; }
         string TransactionTracerRecordSql { get; }
         string TransactionTracerRecordSqlSource { get; }
-        TimeSpan TransactionTracerStackThreshold { get; }
         int TransactionTracerMaxStackTraces { get; }
         IEnumerable<long> TrustedAccountIds { get; }
         bool ServerSideConfigurationEnabled { get; }
@@ -183,6 +182,7 @@ namespace NewRelic.Agent.Configuration
         string ProcessHostDisplayName { get; }
         int DatabaseStatementCacheCapacity { get; }
         bool ForceSynchronousTimingCalculationHttpClient { get; }
+        bool EnableAspNetCore6PlusBrowserInjection { get; }
         bool ExcludeNewrelicHeader { get; }
         bool ApplicationLoggingEnabled { get; }
         bool LogMetricsCollectorEnabled { get; }

@@ -81,6 +81,14 @@ namespace NewRelic.Agent.Core.Transactions
             return Segment.NoOpSegment;
         }
 
+        public ISegment StartMessageBrokerSerializationSegment(MethodCall methodCall, MessageBrokerDestinationType destinationType, MessageBrokerAction operation, string brokerVendorName, string destinationName, string kind)
+        {
+#if DEBUG
+            Log.Finest("Skipping StartMessageBrokerSegment outside of a transaction");
+#endif
+            return Segment.NoOpSegment;
+        }
+
         public ISegment StartMethodSegment(MethodCall methodCall, string typeName, string methodName, bool isLeaf = false)
         {
 #if DEBUG
@@ -120,7 +128,7 @@ namespace NewRelic.Agent.Core.Transactions
 
         public void NoticeError(Exception exception)
         {
-            Log.Debug($"Ignoring application error because it occurred outside of a transaction: {exception}");
+            Log.Debug(exception, "Ignoring application error because it occurred outside of a transaction");
         }
 
         public void NoticeError(string message)
@@ -171,6 +179,11 @@ namespace NewRelic.Agent.Core.Transactions
         }
 
         public void SetMessageBrokerTransactionName(MessageBrokerDestinationType destinationType, string brokerVendorName, string destination = null, TransactionNamePriority priority = TransactionNamePriority.Uri)
+        {
+
+        }
+
+        public void SetKafkaMessageBrokerTransactionName(MessageBrokerDestinationType destinationType, string brokerVendorName, string destination = null, TransactionNamePriority priority = TransactionNamePriority.Uri)
         {
 
         }

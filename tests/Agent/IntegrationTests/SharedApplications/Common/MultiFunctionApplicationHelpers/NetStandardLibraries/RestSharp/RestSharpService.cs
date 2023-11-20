@@ -1,4 +1,4 @@
-﻿// Copyright 2020 New Relic, Inc. All rights reserved.
+// Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -12,16 +12,16 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
     [Library]
     public class RestSharpService
     {
-        private readonly HttpClient _client = new HttpClient();
         private OwinService _owinService;
 
         /// <summary>
         /// Starts the RestSharp Test Service with a specific port and path
         /// </summary>
+        /// <param name="server"></param>
         /// <param name="port"></param>
         /// <param name="relativePath"></param>
         [LibraryMethod]
-        public void StartService(int port)
+        public void StartService(string server, int port)
         {
             try
             {
@@ -34,7 +34,7 @@ namespace MultiFunctionApplicationHelpers.NetStandardLibraries.RestSharp
                     .Build();
 
                 // Start OWIN host 
-                _owinService.StartService(port);
+                _owinService.StartService(server, port);
             }
             catch (Exception ex)
             {

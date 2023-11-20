@@ -107,7 +107,7 @@ namespace NewRelic.Agent.Core.Aggregators
                 {
                     if (sample != null)
                     {
-                        Log.DebugFormat("TransactionTraceData: {0}", SerializeTransactionTraceData(sample));
+                        Log.Debug("TransactionTraceData: {0}", SerializeTransactionTraceData(sample));
                     }
                 }
             }

@@ -1,49 +1,46 @@
 // Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using NewRelic.Agent.Api;
-using NewRelic.Agent.Configuration;
-using NewRelic.Agent.Core.AgentHealth;
-using NewRelic.Agent.Core.Api;
-using NewRelic.Agent.Core.BrowserMonitoring;
-using NewRelic.Agent.Core.CallStack;
-using NewRelic.Agent.Core.Database;
-using NewRelic.Agent.Core.DistributedTracing;
-using NewRelic.Agent.Core.Errors;
-using NewRelic.Agent.Core.Metric;
-using NewRelic.Agent.Core.Metrics;
-using NewRelic.Agent.Core.Attributes;
-using NewRelic.Agent.Core.Segments;
-using NewRelic.Agent.Core.Segments.Tests;
-using NewRelic.Agent.Core.Timing;
-using NewRelic.Agent.Core.Transactions;
-using NewRelic.Agent.Core.Transformers.TransactionTransformer;
-using NewRelic.Agent.Core.Utilities;
-using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Builders;
-using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.CrossApplicationTracing;
-using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Data;
-using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Synthetics;
-using NewRelic.Agent.Extensions.Providers.Wrapper;
-using NewRelic.Core.DistributedTracing;
-using NewRelic.SystemExtensions.Collections.Generic;
-using NewRelic.SystemInterfaces;
-using NewRelic.Testing.Assertions;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Telerik.JustMock;
+using NewRelic.Agent.Api;
 using NewRelic.Agent.Api.Experimental;
-using NewRelic.Agent.TestUtilities;
+using NewRelic.Agent.Configuration;
+using NewRelic.Agent.Core.AgentHealth;
 using NewRelic.Agent.Core.Aggregators;
-using NewRelic.Agent.Core.WireModels;
-using NewRelic.Core;
-using NewRelic.Agent.Core.Time;
+using NewRelic.Agent.Core.Api;
+using NewRelic.Agent.Core.Attributes;
+using NewRelic.Agent.Core.BrowserMonitoring;
+using NewRelic.Agent.Core.CallStack;
+using NewRelic.Agent.Core.Database;
 using NewRelic.Agent.Core.DataTransport;
+using NewRelic.Agent.Core.DistributedTracing;
+using NewRelic.Agent.Core.Errors;
+using NewRelic.Agent.Core.Metrics;
+using NewRelic.Agent.Core.Segments;
+using NewRelic.Agent.Core.Segments.Tests;
+using NewRelic.Agent.Core.Time;
+using NewRelic.Agent.Core.Transactions;
+using NewRelic.Agent.Core.Transformers.TransactionTransformer;
+using NewRelic.Agent.Core.Utilities;
+using NewRelic.Agent.Core.WireModels;
+using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Builders;
+using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.CrossApplicationTracing;
+using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Data;
+using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Synthetics;
+using NewRelic.Agent.Extensions.Providers.Wrapper;
+using NewRelic.Agent.TestUtilities;
 using NewRelic.Collections;
-using NewRelic.Agent.Core.Utils;
+using NewRelic.Core;
+using NewRelic.Core.DistributedTracing;
+using NewRelic.SystemExtensions.Collections.Generic;
+using NewRelic.SystemInterfaces;
+using NewRelic.Testing.Assertions;
+using NUnit.Framework;
+using Telerik.JustMock;
 
 namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
 {
@@ -294,6 +291,19 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         }
 
         [Test]
+        public void SetKafkaMessageBrokerTransactionName_SetsKafkaMessageBrokerTransactionName()
+        {
+            const TransactionNamePriority priority = TransactionNamePriority.FrameworkHigh;
+            SetupTransaction();
+
+            _agent.CurrentTransaction.SetKafkaMessageBrokerTransactionName(MessageBrokerDestinationType.Topic, "broker", "dest", priority);
+
+            var addedTransactionName = _transaction.CandidateTransactionName.CurrentTransactionName;
+            Assert.AreEqual("Message/broker/Topic/Consume/Named/dest", addedTransactionName.UnprefixedName);
+            Assert.AreEqual(false, addedTransactionName.IsWeb);
+        }
+
+        [Test]
         public void SetOtherTransactionName_SetsOtherTransactionName()
         {
             const TransactionNamePriority priority = TransactionNamePriority.FrameworkHigh;
@@ -418,7 +428,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
 
             var invocationTarget = new object();
             var method = new Method(typeof(string), "methodName", "parameterTypeNames");
-            var methodCall = new MethodCall(method, invocationTarget, new object[0]);
+            var methodCall = new MethodCall(method, invocationTarget, new object[0], false);
             var opaqueSegment = _agent.CurrentTransaction.StartTransactionSegment(methodCall, "foo");
             Assert.NotNull(opaqueSegment);
 
@@ -446,7 +456,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
             Mock.Arrange(() => _callStackManager.Push(Arg.IsAny<int>()))
                 .DoInstead<object>(pushed => pushedUniqueId = pushed);
 
-            var opaqueSegment = _agent.CurrentTransaction.StartTransactionSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0]), "foo");
+            var opaqueSegment = _agent.CurrentTransaction.StartTransactionSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0], false), "foo");
             Assert.NotNull(opaqueSegment);
 
             var segment = opaqueSegment as Segment;
@@ -461,7 +471,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         {
             SetupTransaction();
             var uri = new Uri("/test", UriKind.Relative);
-            NrAssert.Throws<ArgumentException>(() => _agent.CurrentTransaction.StartExternalRequestSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0]), uri, "GET"));
+            NrAssert.Throws<ArgumentException>(() => _agent.CurrentTransaction.StartExternalRequestSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0], false), uri, "GET"));
         }
 
         #endregion Segments
@@ -473,7 +483,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         {
             SetupTransaction();
 
-            var opaqueSegment = _agent.CurrentTransaction.StartTransactionSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0]), "foo");
+            var opaqueSegment = _agent.CurrentTransaction.StartTransactionSegment(new MethodCall(new Method(typeof(string), "", ""), "", new object[0], false), "foo");
             var segment = opaqueSegment as Segment;
             var expectedUniqueId = segment.UniqueId;
             var expectedParentId = segment.ParentUniqueId;
@@ -1354,7 +1364,50 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         }
 
         [Test]
-        public void RecordLogMessage_NoTransaction_NoMessage_NoException_DropsEvent()
+        public void RecordLogMessage_NoTransaction_NoMessage_NoException_WithContextData_Success()
+        {
+            Mock.Arrange(() => _configurationService.Configuration.LogEventCollectorEnabled)
+                .Returns(true);
+            Mock.Arrange(() => _configurationService.Configuration.ContextDataEnabled)
+                .Returns(true);
+
+            var timestamp = DateTime.Now;
+            var timestampUnix = timestamp.ToUnixTimeMilliseconds();
+            var level = "DEBUG";
+            string message = null;
+            var contextData = new Dictionary<string, object>() { { "key1", "value1" }, { "key2", 1 } };
+
+            Func<object, string> getLevelFunc = (l) => level;
+            Func<object, DateTime> getTimestampFunc = (l) => timestamp;
+            Func<object, string> getMessageFunc = (l) => message;
+            Func<object, Exception> getLogExceptionFunc = (l) => null;
+            Func<object, Dictionary<string, object>> getContextDataFunc = (l) => contextData;
+
+            var spanId = "spanid";
+            var traceId = "traceid";
+            var loggingFramework = "testFramework";
+
+            var xapi = _agent as IAgentExperimental;
+            xapi.RecordLogMessage(loggingFramework, new object(), getTimestampFunc, getLevelFunc, getMessageFunc, getLogExceptionFunc, getContextDataFunc, spanId, traceId);
+
+            // Access the private collection of events to get the number of add attempts.
+            var privateAccessor = new PrivateAccessor(_logEventAggregator);
+            var logEvents = privateAccessor.GetField("_logEvents") as ConcurrentPriorityQueue<PrioritizedNode<LogEventWireModel>>;
+
+            var logEvent = logEvents?.FirstOrDefault()?.Data;
+            Assert.AreEqual(1, logEvents.Count);
+            Assert.IsNotNull(logEvent);
+            Assert.AreEqual(timestampUnix, logEvent.TimeStamp);
+            Assert.AreEqual(level, logEvent.Level);
+            Assert.AreEqual(message, logEvent.Message);
+            Assert.AreEqual(spanId, logEvent.SpanId);
+            Assert.AreEqual(traceId, logEvent.TraceId);
+            Assert.AreEqual(contextData, logEvent.ContextData);
+            Assert.IsNotNull(logEvent.Priority);
+        }
+
+        [Test]
+        public void RecordLogMessage_NoTransaction_NoMessage_NoException_NoContextData_DropsEvent()
         {
             Mock.Arrange(() => _configurationService.Configuration.LogEventCollectorEnabled)
                 .Returns(true);
@@ -1476,7 +1529,51 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         }
 
         [Test]
-        public void RecordLogMessage_WithTransaction_NoMessage_NoException_DropsEvent()
+        public void RecordLogMessage_WithTransaction_NoMessage_NoException_WithContextData_Success()
+        {
+            Mock.Arrange(() => _configurationService.Configuration.LogEventCollectorEnabled)
+                .Returns(true);
+            Mock.Arrange(() => _configurationService.Configuration.ContextDataEnabled)
+                .Returns(true);
+
+            var timestamp = DateTime.Now;
+            var timestampUnix = timestamp.ToUnixTimeMilliseconds();
+            var level = "DEBUG";
+            string message = null;
+            var contextData = new Dictionary<string, object>() { { "key1", "value1" }, { "key2", 1 } };
+
+            Func<object, string> getLevelFunc = (l) => level;
+            Func<object, DateTime> getTimestampFunc = (l) => timestamp;
+            Func<object, string> getMessageFunc = (l) => message;
+            Func<object, Exception> getLogExceptionFunc = (l) => null;
+            Func<object, Dictionary<string, object>> getContextDataFunc = (l) => contextData;
+
+            var spanId = "spanid";
+            var traceId = "traceid";
+            var loggingFramework = "testFramework";
+
+            SetupTransaction();
+            var transaction = _transactionService.GetCurrentInternalTransaction();
+            var priority = transaction.Priority;
+
+            var xapi = _agent as IAgentExperimental;
+            xapi.RecordLogMessage(loggingFramework, new object(), getTimestampFunc, getLevelFunc, getMessageFunc, getLogExceptionFunc, getContextDataFunc, spanId, traceId);
+
+            var harvestedLogEvents = transaction.HarvestLogEvents();
+            var logEvent = harvestedLogEvents.FirstOrDefault();
+            Assert.AreEqual(1, harvestedLogEvents.Count);
+            Assert.IsNotNull(logEvent);
+            Assert.AreEqual(timestampUnix, logEvent.TimeStamp);
+            Assert.AreEqual(level, logEvent.Level);
+            Assert.AreEqual(message, logEvent.Message);
+            Assert.AreEqual(spanId, logEvent.SpanId);
+            Assert.AreEqual(traceId, logEvent.TraceId);
+            Assert.AreEqual(contextData, logEvent.ContextData);
+            Assert.AreEqual(priority, logEvent.Priority);
+        }
+
+        [Test]
+        public void RecordLogMessage_WithTransaction_NoMessage_NoException_NoContextData_DropsEvent()
         {
             Mock.Arrange(() => _configurationService.Configuration.LogEventCollectorEnabled)
                 .Returns(true);
@@ -1804,7 +1901,7 @@ namespace NewRelic.Agent.Core.Wrapper.AgentWrapperApi
         private void SetupTransaction()
         {
             var transactionName = TransactionName.ForWebTransaction("foo", "bar");
-            _transaction = new Transaction(_configurationService.Configuration, transactionName, Mock.Create<ITimer>(), DateTime.UtcNow, _callStackManager, Mock.Create<IDatabaseService>(), default(float), Mock.Create<IDatabaseStatementParser>(), _distributedTracePayloadHandler, _errorService, _attribDefs);
+            _transaction = new Transaction(_configurationService.Configuration, transactionName, Mock.Create<ISimpleTimer>(), DateTime.UtcNow, _callStackManager, Mock.Create<IDatabaseService>(), default(float), Mock.Create<IDatabaseStatementParser>(), _distributedTracePayloadHandler, _errorService, _attribDefs);
 
             Mock.Arrange(() => _transactionService.GetCurrentInternalTransaction()).Returns(_transaction);
         }

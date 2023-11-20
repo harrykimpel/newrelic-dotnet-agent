@@ -7,7 +7,7 @@ using NewRelic.Agent.Api.Experimental;
 using NewRelic.Agent.Core.Aggregators;
 using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.CrossApplicationTracing;
 using NewRelic.Agent.Core.Time;
-using NewRelic.Agent.Core.Metric;
+using NewRelic.Agent.Core.Metrics;
 using static NewRelic.Agent.Core.WireModels.MetricWireModel;
 using NewRelic.Agent.Configuration;
 using NewRelic.Parsing;
@@ -93,6 +93,8 @@ namespace NewRelic.Agent.Core.Segments
             AttribDefs.Component.TrySetValue(attribVals, _segmentState.TypeName);
             AttribDefs.SpanKind.TrySetDefault(attribVals);
             AttribDefs.HttpStatusCode.TrySetValue(attribVals, _httpStatusCode);   //Attrib handles null
+            AttribDefs.ServerAddress.TrySetValue(attribVals, Uri.Host);
+            AttribDefs.ServerPort.TrySetValue(attribVals, Uri.Port);
         }
 
         public override string GetTransactionTraceName()
