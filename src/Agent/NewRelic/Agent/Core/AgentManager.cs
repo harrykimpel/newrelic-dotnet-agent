@@ -25,25 +25,30 @@ using System.Threading.Tasks;
 
 namespace NewRelic.Agent.Core
 {
-    sealed public class AgentManager : IAgentManager, IDisposable
+    public sealed class AgentManager : IAgentManager, IDisposable
     {
-        private readonly IContainer _container;
+        private IContainer _container;
         private readonly ConfigurationSubscriber _configurationSubscription = new ConfigurationSubscriber();
-        private readonly static IAgentManager DisabledAgentManager = new DisabledAgentManager();
-        private readonly static AgentSingleton Singleton = new AgentSingleton();
+        private static readonly IAgentManager DisabledAgentManager = new DisabledAgentManager();
+        private static readonly AgentSingleton Singleton = new AgentSingleton();
 
-        private sealed class AgentSingleton : Singleton<IAgentManager>
+        private sealed class AgentSingleton : AsyncSingleton<IAgentManager>
         {
-            public AgentSingleton() : base(DisabledAgentManager) { }
+
+            public AgentSingleton() : base(DisabledAgentManager)
+            {
+            }
 
             // Called by Singleton::Singleton
-            protected override IAgentManager CreateInstance()
+            protected override async Task<IAgentManager> CreateInstanceAsync()
             {
                 try
                 {
                     var agentManager = new AgentManager();
 
-                    //If the AgentManager received a shutdown event by the time the .ctor completes it means that the agent
+                    await agentManager.InitializeAsync().ConfigureAwait(false);
+
+                    //If the AgentManager received a shutdown event by the time InitializeAsync() completes, it means that the agent
                     //was unable to start correctly. The shutdown process cannot switch the Singleton to use
                     //the DisabledAgentManager because the Singleton is still being created so we need to do that here.
                     if (agentManager._shutdownEventReceived)
@@ -80,7 +85,7 @@ namespace NewRelic.Agent.Core
 
         private IConfiguration Configuration { get { return _configurationSubscription.Configuration; } }
         private ThreadProfilingService _threadProfilingService;
-        private readonly IWrapperService _wrapperService;
+        private IWrapperService _wrapperService;
 
         private volatile bool _shutdownEventReceived;
         private volatile bool _isInitialized;
@@ -93,6 +98,10 @@ namespace NewRelic.Agent.Core
         /// initialization of the logging system.
         /// </remarks>
         private AgentManager()
+        {
+        }
+
+        private async Task InitializeAsync()
         {
             _container = AgentServices.GetContainer();
             AgentServices.RegisterServices(_container);
@@ -146,17 +155,10 @@ namespace NewRelic.Agent.Core
             // No errors if we don't try to wait, but that causes other problems. Maybe we need some kind of
             // global flag to tell us when the agent is connected and all other processing waits on that?
             var connectionManager = _container.Resolve<IConnectionManager>();
-            var autoStartTask = Task.Run(async () =>
-            {
-                Log.Debug("Attempting AutoStartAsync");
-                await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
-                Log.Debug("AutoStartAsync complete");
-            });
 
-            autoStartTask.GetAwaiter().GetResult();
-
-            Log.Debug("Waiting for AutoStartAsync to finish");
-            connectionManager.Connected.Wait();
+            Log.Debug("Attempting AutoStartAsync");
+            await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
+            await connectionManager.Connected.WaitAsync().ConfigureAwait(false);
             Log.Debug("AutoStartAsync finished, continuing execution");
 
             AgentServices.StartServices(_container);
