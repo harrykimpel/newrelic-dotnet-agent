@@ -1,4 +1,4 @@
-﻿// Copyright 2020 New Relic, Inc. All rights reserved.
+// Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 #if !NETFRAMEWORK
@@ -77,6 +77,11 @@ namespace NewRelic.Agent.Core.DataTransport.Client
                     await DiagnoseConnectionErrorAsync(request.Uri.Host).ConfigureAwait(false);
                 }
 
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected exception in SendAsync()");
                 throw;
             }
         }

@@ -158,7 +158,7 @@ namespace NewRelic.Agent.Core
 
             Log.Debug("Attempting AutoStartAsync");
             await connectionManager.AttemptAutoStartAsync().ConfigureAwait(false);
-            await connectionManager.Connected.WaitAsync().ConfigureAwait(false);
+            //await connectionManager.Connected.WaitAsync().ConfigureAwait(false);
             Log.Debug("AutoStartAsync finished, continuing execution");
 
             AgentServices.StartServices(_container);

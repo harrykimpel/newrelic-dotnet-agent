@@ -62,8 +62,6 @@ namespace NewRelic.Agent.Core.DataTransport
         {
             if (_configuration.AutoStartAgent)
                 await StartAsync().ConfigureAwait(false);
-
-            Connected.Release();
         }
 
         public SemaphoreSlim Connected { get; } = new SemaphoreSlim(1);
@@ -106,6 +104,8 @@ namespace NewRelic.Agent.Core.DataTransport
             finally
             {
                 _syncObject.Release();
+            
+                Connected.Release();
             }
         }
 
@@ -278,17 +278,17 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private void OnStartAgent(StartAgentEvent eventData)
         {
-            Task.Run(StartAsync).Wait();
+            Task.Run(StartAsync).GetAwaiter().GetResult();
         }
 
         private void OnRestartAgent(RestartAgentEvent eventData)
         {
-            Task.Run(ReconnectAsync).Wait();
+            Task.Run(ReconnectAsync).GetAwaiter().GetResult();
         }
 
         private void OnCleanShutdown(CleanShutdownEvent eventData)
         {
-            Task.Run(DisconnectAsync).Wait();
+            Task.Run(DisconnectAsync).GetAwaiter().GetResult();
         }
 
         #endregion Event handlers
