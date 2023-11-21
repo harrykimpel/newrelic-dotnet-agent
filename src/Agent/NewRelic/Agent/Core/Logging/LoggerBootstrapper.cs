@@ -7,12 +7,11 @@ using System.IO;
 using System.Text;
 using Serilog;
 using Serilog.Core;
-using Serilog.Formatting;
 using Logger = NewRelic.Agent.Core.Logging.Logger;
 using NewRelic.Agent.Core.Logging;
-using Serilog.Templates;
-#if NETFRAMEWORK
 using Serilog.Events;
+#if NETSTANDARD2_0
+using System.Runtime.InteropServices;
 #endif
 
 namespace NewRelic.Agent.Core
@@ -24,22 +23,20 @@ namespace NewRelic.Agent.Core
         //private static ILayout AuditLogLayout = new PatternLayout("%utcdate{yyyy-MM-dd HH:mm:ss,fff} NewRelic %level: %message\r\n");
         //private static ILayout FileLogLayout = new PatternLayout("%utcdate{yyyy-MM-dd HH:mm:ss,fff} NewRelic %6level: [pid: %property{pid}, tid: %property{threadid}] %message\r\n");
 
-        private static ExpressionTemplate AuditLogLayout = new ExpressionTemplate("{UtcDateTime(@t):yyyy-MM-dd HH:mm:ss,fff} NewRelic Audit: {@m}\n");
-        private static ExpressionTemplate FileLogLayout = new ExpressionTemplate("{UtcDateTime(@t):yyyy-MM-dd HH:mm:ss,fff} NewRelic {NRLogLevel,6}: [pid: {pid}, tid: {tid}] {@m}\n{@x}");
+        private const string AuditLogLayout = "{UTCTimestamp} NewRelic Audit: {Message:l}\n";
+
+        private const string FileLogLayout = "{UTCTimestamp} NewRelic {NRLogLevel,6}: [pid: {pid}, tid: {tid}] {Message:l}\n{Exception:l}";
 
         private static LoggingLevelSwitch _loggingLevelSwitch = new LoggingLevelSwitch();
 
         private static InMemorySink _inMemorySink = new InMemorySink();
 
-        public static void UpdateLoggingLevel(string newLogLevel)
-        {
-            _loggingLevelSwitch.MinimumLevel = newLogLevel.MapToSerilogLogLevel();
-        }
+        public static void SetLoggingLevel(string newLogLevel) => _loggingLevelSwitch.MinimumLevel = newLogLevel.MapToSerilogLogLevel();
 
         public static void Initialize()
         {
             var startupLoggerConfig = new LoggerConfiguration()
-                .Enrich.With(new ThreadIdEnricher(), new ProcessIdEnricher(), new NrLogLevelEnricher())
+                .Enrich.With(new ThreadIdEnricher(), new ProcessIdEnricher(), new NrLogLevelEnricher(), new UTCTimestampEnricher())
                 .MinimumLevel.Information()
                 .ConfigureInMemoryLogSink()
                 .ConfigureEventLogSink();
@@ -54,12 +51,14 @@ namespace NewRelic.Agent.Core
         /// <remarks>This should only be called once, as soon as you have a valid config.</remarks>
         public static void ConfigureLogger(ILogConfig config)
         {
-            SetupLogLevel(config);
+            SetLoggingLevel(config.LogLevel);
+
+            AuditLog.IsAuditLogEnabled = config.IsAuditLogEnabled;
 
             var loggerConfig = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(_loggingLevelSwitch)
+                .Enrich.With(new ThreadIdEnricher(), new ProcessIdEnricher(), new NrLogLevelEnricher(), new UTCTimestampEnricher())
                 .ConfigureAuditLogSink(config)
-                .Enrich.With(new ThreadIdEnricher(), new ProcessIdEnricher(), new NrLogLevelEnricher())
                 .ConfigureFileSink(config)
                 .ConfigureDebugSink();
 
@@ -76,6 +75,8 @@ namespace NewRelic.Agent.Core
             Log.Logger = configuredLogger;
 
             NewRelic.Core.Logging.Log.Initialize(new Logger());
+
+            Log.Logger.Information("Log level set to {0}", config.LogLevel);
         }
 
         private static void EchoInMemoryLogsToConfiguredLogger(ILogger configuredLogger)
@@ -87,12 +88,6 @@ namespace NewRelic.Agent.Core
 
             _inMemorySink.Dispose();
         }
-
-        /// <summary>
-        /// Sets the log level for logger to either the level provided by the config or an public default.
-        /// </summary>
-        /// <param name="config">The LogConfig to look for the level setting in.</param>
-        private static void SetupLogLevel(ILogConfig config) => _loggingLevelSwitch.MinimumLevel = config.LogLevel.MapToSerilogLogLevel();
 
         private static LoggerConfiguration ConfigureInMemoryLogSink(this LoggerConfiguration loggerConfiguration)
         {
@@ -107,28 +102,49 @@ namespace NewRelic.Agent.Core
         }
 
         /// <summary>
-        /// Add the Event Log sink if running on .NET Framework
+        /// Configure an Event Log sink if running on Windows. Logs messages at Warning level and above. Intended for
+        /// use during bootstrapping and as a fallback if the file logging sink can't be created.
+        ///
+        /// The Agent will create the event log source if it doesn't exist *and* if the app is running with
+        /// administrator privileges. Otherwise, it will silently do nothing.
+        ///
+        /// It is possible to manually create the event log source in an elevated Powershell window:
+        ///    New-EventLog -LogName "Application" -Source "New Relic .NET Agent"
+        /// 
         /// </summary>
         /// <param name="loggerConfiguration"></param>
         private static LoggerConfiguration ConfigureEventLogSink(this LoggerConfiguration loggerConfiguration)
         {
-#if NETFRAMEWORK
-            const string eventLogName = "Application";
-            const string eventLogSourceName = "New Relic .NET Agent";
-
-            loggerConfiguration
-                    .WriteTo.Logger(configuration =>
-                    {
-                        configuration
-                        .ExcludeAuditLog()
-                        .WriteTo.EventLog(
-                            source: eventLogSourceName,
-                            logName: eventLogName,
-                            restrictedToMinimumLevel: LogEventLevel.Warning,
-                            outputTemplate: "{Level}: {Message}{NewLine}{Exception}"
-                        );
-                    });
+#if NETSTANDARD2_0
+            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+            var isWindows = true;
 #endif
+            if (isWindows)
+            {
+                const string eventLogName = "Application";
+                const string eventLogSourceName = "New Relic .NET Agent";
+                try
+                {
+                    loggerConfiguration
+                            .WriteTo.Logger(configuration =>
+                            {
+                                configuration
+                                .ExcludeAuditLog()
+                                .WriteTo.EventLog(
+                                    source: eventLogSourceName,
+                                    logName: eventLogName,
+                                    restrictedToMinimumLevel: LogEventLevel.Warning,
+                                    outputTemplate: "{Level}: {Message}{NewLine}{Exception}",
+                                    manageEventSource: true
+                                );
+                            });
+                }
+                catch
+                {
+                    // ignored -- there's nothing we can do at this point, as EventLog is our "fallback" logger and if it fails, we're out of luck
+                }
+            }
             return loggerConfiguration;
         }
 
@@ -143,7 +159,7 @@ namespace NewRelic.Agent.Core
                 {
                     configuration
                         .ExcludeAuditLog()
-                        .WriteTo.Debug(FileLogLayout);
+                        .WriteTo.Debug(outputTemplate: FileLogLayout);
                 });
 #endif
             return loggerConfiguration;
@@ -160,7 +176,7 @@ namespace NewRelic.Agent.Core
                     {
                         configuration
                             .ExcludeAuditLog()
-                            .WriteTo.Console(FileLogLayout);
+                            .WriteTo.Console(outputTemplate: FileLogLayout);
                     })
                 );
         }
@@ -172,6 +188,10 @@ namespace NewRelic.Agent.Core
         /// <param name="config">The configuration for the appender.</param>
         private static LoggerConfiguration ConfigureFileSink(this LoggerConfiguration loggerConfiguration, ILogConfig config)
         {
+            if (!config.Enabled)
+            {
+                return loggerConfiguration;
+            }
             string logFileName = config.GetFullLogFileName();
 
             try
@@ -190,11 +210,11 @@ namespace NewRelic.Agent.Core
             catch (Exception ex)
             {
                 Log.Logger.Warning(ex, "Unexpected exception when configuring file sink.");
-#if NETFRAMEWORK
+
                 // Fallback to the event log sink if we cannot setup a file logger.
+                NewRelic.Core.Logging.Log.FileLoggingHasFailed = true;
                 Log.Logger.Warning("Falling back to EventLog sink.");
                 loggerConfiguration.ConfigureEventLogSink();
-#endif
             }
 
             return loggerConfiguration;
@@ -205,7 +225,7 @@ namespace NewRelic.Agent.Core
         /// </summary>
         private static LoggerConfiguration ConfigureAuditLogSink(this LoggerConfiguration loggerConfiguration, ILogConfig config)
         {
-            if (!config.IsAuditLogEnabled) return loggerConfiguration;
+            if (!config.IsAuditLogEnabled || !config.Enabled) return loggerConfiguration;
 
             string logFileName = config.GetFullLogFileName().Replace(".log", "_audit.log");
 
@@ -225,9 +245,9 @@ namespace NewRelic.Agent.Core
         /// </summary>
         /// <param name="loggerConfiguration"></param>
         /// <param name="fileName">The name of the file this appender will write to.</param>
-        /// <param name="textFormatter"></param>
+        /// <param name="outputFormat"></param>
         /// <remarks>This does not call appender.ActivateOptions or add the appender to the logger.</remarks>
-        private static LoggerConfiguration ConfigureRollingLogSink(this LoggerConfiguration loggerConfiguration, string fileName, ITextFormatter textFormatter)
+        private static LoggerConfiguration ConfigureRollingLogSink(this LoggerConfiguration loggerConfiguration, string fileName, string outputFormat)
         {
             // check that the log file is accessible
             try
@@ -249,7 +269,7 @@ namespace NewRelic.Agent.Core
                 return loggerConfiguration
                     .WriteTo
                     .File(path: fileName,
-                            formatter: textFormatter,
+                            outputTemplate:outputFormat,
                             fileSizeLimitBytes: 50 * 1024 * 1024,
                             encoding: Encoding.UTF8,
                             rollOnFileSizeLimit: true,

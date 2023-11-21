@@ -220,6 +220,8 @@ namespace NewRelic.Agent.Core
                     "NEW_RELIC_LOG",
                     "NEWRELIC_PROFILER_LOG_DIRECTORY",
                     "NEWRELIC_LOG_LEVEL",
+                    "NEW_RELIC_LOG_ENABLED",
+                    "NEW_RELIC_LOG_CONSOLE",
                     "NEW_RELIC_LABELS",
                     "NEW_RELIC_PROXY_HOST",
                     "NEW_RELIC_PROXY_URI_PATH",
@@ -229,6 +231,7 @@ namespace NewRelic.Agent.Core
                     "NEW_RELIC_ATTRIBUTES_ENABLED",
                     "NEW_RELIC_ATTRIBUTES_INCLUDE",
                     "NEW_RELIC_ATTRIBUTES_EXCLUDE",
+                    "NEW_RELIC_HIGH_SECURITY",
                     "NEW_RELIC_INFINITE_TRACING_TIMEOUT_CONNECT",
                     "NEW_RELIC_INFINITE_TRACING_TIMEOUT_SEND",
                     "NEW_RELIC_INFINITE_TRACING_EXIT_TIMEOUT",
@@ -369,6 +372,7 @@ namespace NewRelic.Agent.Core
 
                 if (cleanShutdown)
                 {
+                    Log.Debug("Agent is connected, executing a clean shutdown.");
                     EventBus<PreCleanShutdownEvent>.Publish(new PreCleanShutdownEvent());
                     EventBus<CleanShutdownEvent>.Publish(new CleanShutdownEvent());
                 }
