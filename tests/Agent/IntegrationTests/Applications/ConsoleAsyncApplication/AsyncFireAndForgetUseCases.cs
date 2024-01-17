@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -165,7 +166,11 @@ namespace ConsoleAsyncApplication
         private static void SyncMethod(int delayMs, string transactionName)
         {
             transactionName = UpdateTransactionName(transactionName, "SM");
-
+            NewRelic.Api.Agent.NewRelic.RecordCustomEvent("Foo Custom Event", new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("metric1", 1.0f),
+                new KeyValuePair<string, object>("metric2", 365),
+            });
             Thread.Sleep(delayMs);
 
             UpdateTransactionName(transactionName, "SM");

@@ -19,6 +19,7 @@ namespace NewRelic.Agent.IntegrationTests.Applications.AgentApiExecutor
 
         static void Main(string[] args)
         {
+            System.Diagnostics.Debugger.Launch();
             RealMain(args);
             Thread.Sleep(1000); //needed for OtherTransaction test
         }

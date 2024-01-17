@@ -36,6 +36,8 @@ namespace NewRelic.Agent.Core.DataTransport
         DataTransportResponseStatus Send(IEnumerable<CustomEventWireModel> customEvents);
         DataTransportResponseStatus Send(LogEventWireModelCollection loggingEvents);
         DataTransportResponseStatus Send(LoadedModuleWireModelCollection loadedModules);
+        DataTransportResponseStatus Send(IEnumerable<DimensionalMetricWireModel> metrics);
+
     }
 
     public class DataTransportService : ConfigurationBasedService, IDataTransportService
@@ -112,6 +114,10 @@ namespace NewRelic.Agent.Core.DataTransport
         public DataTransportResponseStatus Send(LogEventWireModelCollection loggingEvents)
         {
             return TrySendDataRequest("log_event_data", loggingEvents);
+        }
+        public DataTransportResponseStatus Send(IEnumerable<DimensionalMetricWireModel> metrics)
+        {
+            return TrySendDataRequest("dimensional_metric_data", _configuration.AgentRunId, metrics);
         }
 
         public DataTransportResponseStatus Send(IEnumerable<MetricWireModel> metrics)

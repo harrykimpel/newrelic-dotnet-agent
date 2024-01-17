@@ -49,6 +49,13 @@ namespace NewRelic.Agent.Core.Attributes
         AttributeDefinition<string, string> DbStatement { get; }
         AttributeDefinition<string, string> DbSystem { get; }
         AttributeDefinition<string, string> DistributedTraceId { get; }
+        AttributeDefinition<long, long> DmCount { get; }
+        AttributeDefinition<long, long> DmDuration { get; }
+        AttributeDefinition<string, string> DmName { get; }
+        AttributeDefinition<object[], object[]> DmSummary { get; }
+        AttributeDefinition<long, long> DmTimestamp { get; }
+        AttributeDefinition<string, string> DmType { get; }
+        AttributeDefinition<string, string> DmUnit { get; }
         AttributeDefinition<TimeSpan, double> Duration { get; }
         AttributeDefinition<bool, bool> IsErrorExpected { get; }
         AttributeDefinition<bool, bool> SpanIsErrorExpected { get; }
@@ -1054,5 +1061,88 @@ namespace NewRelic.Agent.Core.Attributes
             .AppliesTo(AttributeDestinations.SpanEvent)
             .Build(_attribFilter)
         );
+
+        #region DimensionalMetrics
+        /* 
+| Param | Type | Description | Required |
+| ----- | ---- | ----------- | -------- |
+| `type` | String | The event type, which must be `Metric` | X |
+| `timestamp` | Long | UTC timestamp | X |
+| `metric.name` | String | Event type | X |
+| `metric.count` | Long | Count |
+| `metric.summary` | Array | Summary [count, total, min, max] (long, double, double, double) |
+| `duration.ms` | Long | Duration in milliseconds | X |
+| `unit` | String | Unit (`s`, `ms`, `mebibytes`, etc) | X |
+         * */
+        private AttributeDefinition<string, string> _dmType;
+        public AttributeDefinition<string, string> DmType => _dmType ?? (
+            _dmType = AttributeDefinitionBuilder.CreateString(
+                "type",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<long, long> _dmTimestamp;
+        public AttributeDefinition<long, long> DmTimestamp => _dmTimestamp ?? (
+            _dmTimestamp = AttributeDefinitionBuilder.CreateLong(
+                "timestamp",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<string, string> _dmName;
+        public AttributeDefinition<string, string> DmName => _dmName ?? (
+            _dmName = AttributeDefinitionBuilder.CreateString(
+                "metric.name",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<long, long> _dmCount;
+        public AttributeDefinition<long, long> DmCount=> _dmCount ?? (
+            _dmCount = AttributeDefinitionBuilder.CreateLong(
+                "metric.count",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<object[], object[]> _dmSummary;
+        public AttributeDefinition<object[], object[]> DmSummary => _dmSummary ?? (
+            _dmSummary = AttributeDefinitionBuilder.Create<object[]>(
+                "metric.summary",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<long, long> _dmDuration;
+        public AttributeDefinition<long, long> DmDuration => _dmDuration ?? (
+            _dmDuration = AttributeDefinitionBuilder.CreateLong(
+                "duration.ms",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+
+        private AttributeDefinition<string, string> _dmUnit;
+        public AttributeDefinition<string, string> DmUnit => _dmUnit ?? (
+            _dmUnit = AttributeDefinitionBuilder.CreateString(
+                "unit",
+                AttributeClassification.Intrinsics
+            )
+            .AppliesTo(AttributeDestinations.DimensionalMetric)
+            .Build(_attribFilter)
+        );
+        #endregion
     }
 }

@@ -6,7 +6,7 @@ using System;
 namespace NewRelic.Agent.Core.Attributes
 {
     [Flags]
-    public enum AttributeDestinations : byte
+    public enum AttributeDestinations
     {
         None = 0,
         TransactionTrace = 1 << 0,
@@ -17,6 +17,7 @@ namespace NewRelic.Agent.Core.Attributes
         SqlTrace = 1 << 5,
         SpanEvent = 1 << 6,
         CustomEvent = 1 << 7,
-        All = 0xFF,
+        DimensionalMetric = 1 << 8,
+        All = 0x1FF,
     }
 }
