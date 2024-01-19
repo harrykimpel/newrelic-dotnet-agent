@@ -180,6 +180,28 @@ namespace NewRelic.Agent.Core
             TryInvoke(work, apiName, apiMetric);
         }
 
+        public static void DimensionalMetricAddCount(string name, int count)
+        {
+            const ApiMethod apiMetric = ApiMethod.DimensionalMetricAddCount;
+            const string apiName = nameof(DimensionalMetricAddCount);
+            void work()
+            {
+                InternalApi.DimensionalMetricAddCount(name, count);
+            }
+            TryInvoke(work, apiName, apiMetric);
+        } 
+
+        public static void DimensionalMetricAddSummary(string name, double val)
+        {
+            const ApiMethod apiMetric = ApiMethod.DimensionalMetricAddSummary;
+            const string apiName = nameof(DimensionalMetricAddSummary);
+            void work()
+            {
+                InternalApi.DimensionalMetricAddSummary(name, val);
+            }
+            TryInvoke(work, apiName, apiMetric);
+        }
+
         /// <summary>
         /// Notice an error identified by an exception report it to the New Relic service.
         /// If this method is called within a transaction,

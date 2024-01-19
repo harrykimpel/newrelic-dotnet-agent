@@ -275,6 +275,9 @@ namespace NewRelic.Agent.Api
         /// </summary>
         /// <param name="callback">The callback to invoke to define the error group that an Exception belongs to.</param>
         void SetErrorGroupCallback(Func<IReadOnlyDictionary<string, object>, string> callback);
+
+        void DimensionalMetricAddCount(string name, int count);
+        void DimensionalMetricAddSummary(string name, double val);
     }
 }
 

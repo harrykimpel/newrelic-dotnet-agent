@@ -33,7 +33,7 @@ namespace NewRelic.Agent.Core.Api
             _errorGroupCallbackUpdateEvents = new List<ErrorGroupCallbackUpdateEvent>();
             EventBus<ErrorGroupCallbackUpdateEvent>.Subscribe(OnRaisedErrorGroupCallbackUpdateEvent);
 
-            _agentApi = new AgentApiImplementation(null, null, null, null, null, null, null, configurationService, _wrapperApi, null, null, null);
+            _agentApi = new AgentApiImplementation(null, null, null, null, null, null, null, configurationService, _wrapperApi, null, null, null, null);
         }
 
         [TearDown]

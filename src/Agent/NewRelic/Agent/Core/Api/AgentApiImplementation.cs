@@ -24,6 +24,7 @@ using NewRelic.Agent.Core.Wrapper.AgentWrapperApi.Builders;
 using NewRelic.Core.Logging;
 using NewRelic.Agent.Api;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace NewRelic.Agent.Core.Api
 {
@@ -47,8 +48,9 @@ namespace NewRelic.Agent.Core.Api
         private readonly AgentBridgeApi _agentBridgeApi;
         private readonly ITracePriorityManager _tracePriorityManager;
         private readonly IErrorService _errorService;
+        private readonly IDimensionalMetricAggregator _dimensionalMetricAggregator;
 
-        public AgentApiImplementation(ITransactionService transactionService, ICustomEventTransformer customEventTransformer, IMetricBuilder metricBuilder, IMetricAggregator metricAggregator, ICustomErrorDataTransformer customErrorDataTransformer, IBrowserMonitoringPrereqChecker browserMonitoringPrereqChecker, IBrowserMonitoringScriptMaker browserMonitoringScriptMaker, IConfigurationService configurationService, IAgent agent, ITracePriorityManager tracePriorityManager, IApiSupportabilityMetricCounters apiSupportabilityMetricCounters, IErrorService errorService)
+        public AgentApiImplementation(ITransactionService transactionService, ICustomEventTransformer customEventTransformer, IMetricBuilder metricBuilder, IMetricAggregator metricAggregator, ICustomErrorDataTransformer customErrorDataTransformer, IBrowserMonitoringPrereqChecker browserMonitoringPrereqChecker, IBrowserMonitoringScriptMaker browserMonitoringScriptMaker, IConfigurationService configurationService, IAgent agent, ITracePriorityManager tracePriorityManager, IApiSupportabilityMetricCounters apiSupportabilityMetricCounters, IErrorService errorService, IDimensionalMetricAggregator dmAggregator)
         {
             _transactionService = transactionService;
             _customEventTransformer = customEventTransformer;
@@ -62,6 +64,7 @@ namespace NewRelic.Agent.Core.Api
             _agentBridgeApi = new AgentBridgeApi(_agent, apiSupportabilityMetricCounters, _configurationService);
             _tracePriorityManager = tracePriorityManager;
             _errorService = errorService;
+            _dimensionalMetricAggregator = dmAggregator;
         }
 
         public void InitializePublicAgent(object publicAgent)
@@ -762,6 +765,23 @@ namespace NewRelic.Agent.Core.Api
             using (new IgnoreWork())
             {
                 EventBus<ErrorGroupCallbackUpdateEvent>.Publish(new ErrorGroupCallbackUpdateEvent(callback));
+            }
+        }
+
+        public void DimensionalMetricAddCount(string name, int count)
+        {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+            using (new IgnoreWork())
+            {
+                _dimensionalMetricAggregator.AddCount(name, count);
+            }
+        }
+        public void DimensionalMetricAddSummary(string name, double val)
+        {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+            using (new IgnoreWork())
+            {
+                _dimensionalMetricAggregator.AddSummary(name, val);
             }
         }
     }

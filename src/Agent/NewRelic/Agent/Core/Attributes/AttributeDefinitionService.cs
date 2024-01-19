@@ -14,6 +14,8 @@ using NewRelic.Agent.Core.Events;
 using System.Linq;
 using System;
 using NewRelic.Core.DistributedTracing;
+using System.Collections;
+using NewRelic.Agent.Core.WireModels;
 
 namespace NewRelic.Agent.Core.Attributes
 {
@@ -52,7 +54,7 @@ namespace NewRelic.Agent.Core.Attributes
         AttributeDefinition<long, long> DmCount { get; }
         AttributeDefinition<long, long> DmDuration { get; }
         AttributeDefinition<string, string> DmName { get; }
-        AttributeDefinition<object[], object[]> DmSummary { get; }
+        AttributeDefinition<DimensionalMetricSummaryWireModel, DimensionalMetricSummaryWireModel> DmSummary { get; }
         AttributeDefinition<long, long> DmTimestamp { get; }
         AttributeDefinition<string, string> DmType { get; }
         AttributeDefinition<string, string> DmUnit { get; }
@@ -1114,9 +1116,9 @@ namespace NewRelic.Agent.Core.Attributes
             .Build(_attribFilter)
         );
 
-        private AttributeDefinition<object[], object[]> _dmSummary;
-        public AttributeDefinition<object[], object[]> DmSummary => _dmSummary ?? (
-            _dmSummary = AttributeDefinitionBuilder.Create<object[]>(
+        private AttributeDefinition<DimensionalMetricSummaryWireModel, DimensionalMetricSummaryWireModel> _dmSummary;
+        public AttributeDefinition<DimensionalMetricSummaryWireModel, DimensionalMetricSummaryWireModel> DmSummary => _dmSummary ?? (
+            _dmSummary = AttributeDefinitionBuilder.Create<DimensionalMetricSummaryWireModel>(
                 "metric.summary",
                 AttributeClassification.Intrinsics
             )

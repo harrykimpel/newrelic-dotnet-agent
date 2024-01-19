@@ -36,7 +36,9 @@ namespace NewRelic.Agent.Core.Metrics
         AcceptDistributedTraceHeaders = 22,
         SpanSetName = 23,
         SetErrorGroupCallback = 24,
-        SetUserId = 25
+        SetUserId = 25,
+        DimensionalMetricAddCount = 26,
+        DimensionalMetricAddSummary = 27
     }
 
     public interface IApiSupportabilityMetricCounters : IOutOfBandMetricSource

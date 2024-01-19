@@ -849,6 +849,30 @@ namespace NewRelic.Api.Agent
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        public static void DimensionalMetricAddCount(string name,int count)
+        {
+            try
+            {
+                System.Diagnostics.Trace.WriteLine("NewRelic.DimensionalMetricAddCount()");
+            }
+            catch
+            {
+                // Swallow any exception thrown from here
+            }
+        }
+
+        public static void DimensionalMetricAddSummary(string name, double val)
+        {
+            try
+            {
+                System.Diagnostics.Trace.WriteLine("NewRelic.DimensionalMetricAddSummary()");
+            }
+            catch
+            {
+                // Swallow any exception thrown from here
+            }
+        }
         #endregion
     }
 

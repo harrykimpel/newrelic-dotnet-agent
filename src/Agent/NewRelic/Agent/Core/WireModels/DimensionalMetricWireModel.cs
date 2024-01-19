@@ -4,9 +4,34 @@
 
 using System;
 using NewRelic.Agent.Core.Attributes;
+using NewRelic.Agent.Core.JsonConverters;
+using Newtonsoft.Json;
 
 namespace NewRelic.Agent.Core.WireModels
 {
+    [JsonArray]
+    public class DimensionalMetricSummaryWireModel
+    {
+        [JsonArrayIndex(Index = 0)]
+        public long Count;
+
+        [JsonArrayIndex(Index = 1)]
+        public double Total;
+
+        [JsonArrayIndex(Index = 2)]
+        public double Min;
+
+        [JsonArrayIndex(Index = 3)]
+        public double Max;
+
+        public DimensionalMetricSummaryWireModel(long count, double total, double min, double max)
+        {
+            Count = count;
+            Total = total;
+            Min = min;
+            Max = max;
+        }
+    }
     public interface IDimensionalMetric
     {
         public void AddToAttributes(IAttributeDefinitions attribDefs, AttributeValueCollection attribValues);
@@ -88,7 +113,7 @@ namespace NewRelic.Agent.Core.WireModels
 
         public void AddToAttributes(IAttributeDefinitions attribDefs, AttributeValueCollection attribValues)
         {
-            attribDefs.DmSummary.TrySetValue(attribValues, [Count, Total, Min, Max]);
+            attribDefs.DmSummary.TrySetValue(attribValues, new DimensionalMetricSummaryWireModel(Count, Total, Min, Max));
         }
 
     }

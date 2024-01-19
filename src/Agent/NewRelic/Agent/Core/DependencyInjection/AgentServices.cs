@@ -191,6 +191,8 @@ namespace NewRelic.Agent.Core.DependencyInjection
             container.Register<IDatabaseStatementParser, DatabaseStatementParser>();
             container.Register<ITraceMetadataFactory, TraceMetadataFactory>();
 
+            container.Register<IDimensionalMetricAggregator, DimensionalMetricAggregator>();
+
             if (AgentInstallConfiguration.IsWindows)
             {
                 container.Register<INativeMethods, WindowsNativeMethods>();

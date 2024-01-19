@@ -329,6 +329,16 @@ namespace NewRelic.Agent.Api
         {
             _agentApiImplementation?.SetErrorGroupCallback(callback);
         }
+
+        public static void DimensionalMetricAddCount(string name, int count)
+        {
+            _agentApiImplementation?.DimensionalMetricAddCount(name, count);
+        }
+
+        public static void DimensionalMetricAddSummary(string name, double val)
+        {
+            _agentApiImplementation?.DimensionalMetricAddSummary(name, val);
+        }
     }
 }
 

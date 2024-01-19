@@ -20,7 +20,8 @@ namespace NewRelic.Agent.Core.Aggregators
 {
     public interface IDimensionalMetricAggregator
     {
-        void Collect(DimensionalMetricWireModel dimensionalMetricWireModel);
+        void AddCount(string name, int val = 1);
+        void AddSummary(string name, double val);
     }
 
     /// <summary>
@@ -79,7 +80,7 @@ namespace NewRelic.Agent.Core.Aggregators
         protected override void Harvest()
         {
             Log.Finest("Dimensional Metric harvest starting.");
-            List<DimensionalMetricWireModel> convertedEvents = null;
+            List<DimensionalMetricWireModel> convertedEvents = new List<DimensionalMetricWireModel>();
             foreach (var metric in _metrics)
             {
                 var attribValues = new AttributeValueCollection(AttributeDestinations.DimensionalMetric);
@@ -123,7 +124,7 @@ namespace NewRelic.Agent.Core.Aggregators
 
         protected override void OnConfigurationUpdated(ConfigurationUpdateSource configurationUpdateSource)
         {
-            throw new NotImplementedException();
+            // Nothing to do right now
         }
     }
 }
