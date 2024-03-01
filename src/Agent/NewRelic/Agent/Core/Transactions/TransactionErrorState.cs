@@ -1,6 +1,8 @@
 // Copyright 2020 New Relic, Inc. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Generic;
+using System.Linq;
 using NewRelic.Agent.Core.Errors;
 
 namespace NewRelic.Agent.Core.Transactions
@@ -26,39 +28,65 @@ namespace NewRelic.Agent.Core.Transactions
 
     public class TransactionErrorState : ITransactionErrorState
     {
-        private (ErrorData ErrorData, string SpanId) _customErrorData;
-        private (ErrorData ErrorData, string SpanId) _transactionExceptionData;
-        private (ErrorData ErrorData, string SpanId) _statusCodeErrorData;
+        // It makes sense to have multiple custom errors per transation,
+        // but only one unhandled exception and status code per transaction
+        private List<ErrorDataWithSpanId> _customErrorData = new List<ErrorDataWithSpanId>();
+        private ErrorDataWithSpanId _transactionExceptionData;
+        private ErrorDataWithSpanId _statusCodeErrorData;
 
-        public bool HasError => GetErrorToReport().ErrorData != null;
+        public bool HasError => GetErrorsToReport().Any();
 
-        public ErrorData ErrorData => GetErrorToReport().ErrorData;
-        public string ErrorDataSpanId => GetErrorToReport().SpanId;
+        public ErrorData ErrorData => GetErrorsToReport().FirstOrDefault().ErrorData;
+        public string ErrorDataSpanId => GetErrorsToReport().FirstOrDefault().SpanId;
 
         public bool IgnoreCustomErrors { get; private set; }
         public bool IgnoreAgentNoticedErrors { get; private set; }
 
-        private (ErrorData ErrorData, string SpanId) GetErrorToReport()
+        private List<ErrorDataWithSpanId> GetErrorsToReport()
         {
-            if (IgnoreCustomErrors) return (null, null);
-            if (_customErrorData.ErrorData != null) return _customErrorData;
-            if (IgnoreAgentNoticedErrors) return (null, null);
-            return _transactionExceptionData.ErrorData != null ? _transactionExceptionData : _statusCodeErrorData;
+            var errorsToReport = new List<ErrorDataWithSpanId>();
+
+            // I don't think this previous logic makes any sense; if a custom error was reported and should be ignored,
+            // why would we not still report any other errors that exist?
+            //if (IgnoreCustomErrors) return (null, null);
+
+            if (! IgnoreCustomErrors && _customErrorData.Any())
+            {
+                errorsToReport.AddRange(_customErrorData);
+            }
+
+            if (!IgnoreAgentNoticedErrors && _transactionExceptionData.ErrorData != null)
+            {
+                errorsToReport.Add(_transactionExceptionData);
+            }
+
+            if (_statusCodeErrorData.ErrorData != null)
+            {
+                errorsToReport.Add(_statusCodeErrorData);
+            }
+
+            return errorsToReport;
         }
 
         public void AddCustomErrorData(ErrorData errorData)
         {
-            if (_customErrorData.ErrorData == null) _customErrorData.ErrorData = errorData;
+            _customErrorData.Add(new ErrorDataWithSpanId(errorData));
         }
 
         public void AddExceptionData(ErrorData errorData)
         {
-            if (_transactionExceptionData.ErrorData == null) _transactionExceptionData.ErrorData = errorData;
+            if (_transactionExceptionData == null)
+            {
+                _transactionExceptionData = new ErrorDataWithSpanId(errorData);
+            }
         }
 
         public void AddStatusCodeErrorData(ErrorData errorData)
         {
-            if (_statusCodeErrorData.ErrorData == null) _statusCodeErrorData.ErrorData = errorData;
+            if (_statusCodeErrorData.ErrorData == null)
+            {
+                _statusCodeErrorData = new ErrorDataWithSpanId(errorData);
+            }
         }
 
         public void SetIgnoreAgentNoticedErrors() => IgnoreAgentNoticedErrors = true;
@@ -66,9 +94,41 @@ namespace NewRelic.Agent.Core.Transactions
 
         public void TrySetSpanIdForErrorData(ErrorData errorData, string spanId)
         {
-            if (_customErrorData.ErrorData == errorData) _customErrorData.SpanId = spanId;
-            if (_transactionExceptionData.ErrorData == errorData) _transactionExceptionData.SpanId = spanId;
-            if (_statusCodeErrorData.ErrorData == errorData) _statusCodeErrorData.SpanId = spanId;
+            foreach (var errorDataWithSpanId in _customErrorData)
+            {
+                if (errorDataWithSpanId.ErrorData == errorData)
+                {
+                    errorDataWithSpanId.SetSpanId(spanId); break;
+                }
+            }
+            if (_transactionExceptionData.ErrorData == errorData)
+            {
+                _transactionExceptionData.SetSpanId(spanId);
+            }
+            if (_statusCodeErrorData.ErrorData == errorData)
+            {
+                _statusCodeErrorData.SetSpanId(spanId);
+            }
         }
+    }
+
+    public class ErrorDataWithSpanId
+    {
+        private ErrorData _errorData;
+        private string _spanId;
+
+        public ErrorDataWithSpanId(ErrorData errorData)
+        {
+            _errorData = errorData;
+            _spanId = null;
+        }
+
+        public void SetSpanId(string spanId)
+        {
+            _spanId = spanId;
+        }
+
+        public ErrorData ErrorData => _errorData;
+        public string SpanId => _spanId;
     }
 }
