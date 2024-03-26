@@ -13,6 +13,13 @@ SPDX-License-Identifier: Apache-2.0
         <exactMethodMatcher methodName="InvokeModelAsync" />
       </match>
     </tracerFactory>
-    
+
+    <!--might need a different wrapper, but let's see-->
+    <tracerFactory name="BedrockInvokeModelAsync">
+      <match assemblyName="AWSSDK.BedrockRuntime" className="Amazon.BedrockRuntime.AmazonBedrockRuntimeClient">
+        <exactMethodMatcher methodName="InvokeModelWithResponseStreamAsync" />
+      </match>
+    </tracerFactory>
+
   </instrumentation>
 </extension>
