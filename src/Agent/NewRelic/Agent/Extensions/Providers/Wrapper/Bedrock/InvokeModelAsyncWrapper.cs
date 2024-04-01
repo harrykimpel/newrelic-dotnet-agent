@@ -106,7 +106,10 @@ namespace NewRelic.Providers.Wrapper.Bedrock
                 return;
             }
 
-            var responsePayload = GetResponsePayload(invokeModelRequest.ModelId, invokeModelResponse);
+            var isStreamingResponse = invokeModelResponse.Body.GetType().FullName == "Amazon.BedrockRuntime.Model.ResponseStream";
+
+            var responsePayload = isStreamingResponse ? GetStreamingResponsePayload(invokeModelRequest.ModelId, invokeModelResponse) :
+                                                        GetResponsePayload(invokeModelRequest.ModelId, invokeModelResponse);
             if (responsePayload == null)
             {
                 agent.Logger.Log(Agent.Extensions.Logging.Level.Warn, $"Error invoking model {invokeModelRequest.ModelId}: Could not deserialize response payload");
@@ -303,6 +306,37 @@ namespace NewRelic.Providers.Wrapper.Bedrock
                 default:
                     throw new ArgumentOutOfRangeException(nameof(model), model, "Unexpected LlmModelType");
             }
+        }
+
+        private static IResponsePayload GetStreamingResponsePayload(string modelId, dynamic invokeModelResponse)
+        {
+            var model = modelId.FromModelId();
+
+            // https://github.com/aws/aws-sdk-net/blob/main/sdk/src/Services/BedrockRuntime/Generated/Model/ResponseStream.cs
+            var responseStream = invokeModelResponse.Body;
+
+            // Attempt at processing the ResponseStream as an IEnumerable
+            string utf8Json = string.Empty;
+
+            foreach (var payloadPart in responseStream)
+            {
+                MemoryStream bytes = payloadPart.Bytes;
+                var sr = new StreamReader(bytes);
+                utf8Json += sr.ReadToEnd();
+            }
+
+            // attempt at processing the ResponseStream with event handler
+
+            //responseBody.ChunkReceived += HandleChunkReceived; // this fails because the compiler doesn't know that ChunkReceived is an EventHandler
+
+            return null; // until we figure out what to actually do
+
+        }
+
+        private static void HandleChunkReceived(object sender, object payloadPart)
+        {
+            // do something useful
+
         }
     }
 
