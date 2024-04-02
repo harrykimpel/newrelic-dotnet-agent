@@ -66,6 +66,7 @@ namespace NewRelic.Providers.Wrapper.Bedrock
                 }
 
                 // We need the duration, so we end the segment before creating the events.
+                // TODO: this is probably wrong for streaming use cases
                 segment.End();
 
                 dynamic invokeModelResponse = GetTaskResult(responseTask);
@@ -315,19 +316,32 @@ namespace NewRelic.Providers.Wrapper.Bedrock
             // https://github.com/aws/aws-sdk-net/blob/main/sdk/src/Services/BedrockRuntime/Generated/Model/ResponseStream.cs
             var responseStream = invokeModelResponse.Body;
 
-            // Attempt at processing the ResponseStream as an IEnumerable
-            string utf8Json = string.Empty;
+            //// Attempt at processing the ResponseStream as an IEnumerable
+            //string utf8Json = string.Empty;
 
-            foreach (var payloadPart in responseStream)
-            {
-                MemoryStream bytes = payloadPart.Bytes;
-                var sr = new StreamReader(bytes);
-                utf8Json += sr.ReadToEnd();
-            }
+            //foreach (var payloadPart in responseStream)
+            //{
+            //    MemoryStream bytes = payloadPart.Bytes;
+            //    var sr = new StreamReader(bytes);
+            //    utf8Json += sr.ReadToEnd();
+            //}
 
             // attempt at processing the ResponseStream with event handler
 
-            //responseBody.ChunkReceived += HandleChunkReceived; // this fails because the compiler doesn't know that ChunkReceived is an EventHandler
+            // Try using visby to get the event handler as an actual EventHandler
+
+            var responseStreamType = responseStream.GetType();
+
+            // The return type for field ChunkReceived does not inherit or implement System.EventHandler, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e
+            // System.EventHandler`1[[Amazon.Runtime.EventStreams.EventStreamEventReceivedArgs`1[[Amazon.BedrockRuntime.Model.PayloadPart, AWSSDK.BedrockRuntime, Version=3.3.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604]], AWSSDK.Core, Version=3.3.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604]], System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e
+            var eventHandlerReadAccessor = VisibilityBypasser.Instance.GenerateFieldReadAccessor<EventHandler<dynamic>>(responseStreamType, "ChunkReceived");
+
+            EventHandler chunkReceivedHandler = eventHandlerReadAccessor(responseStream);
+
+            chunkReceivedHandler += HandleChunkReceived;
+
+            // Consider removing customer's event handler, running ours, and then calling theirs
+
 
             return null; // until we figure out what to actually do
 
