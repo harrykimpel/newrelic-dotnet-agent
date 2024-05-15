@@ -10,7 +10,7 @@ using Serilog.Core;
 using Logger = NewRelic.Agent.Core.Logging.Logger;
 using NewRelic.Agent.Core.Logging;
 using Serilog.Events;
-#if NETSTANDARD2_0
+#if NET
 using System.Runtime.InteropServices;
 #endif
 
@@ -115,7 +115,7 @@ namespace NewRelic.Agent.Core
         /// <param name="loggerConfiguration"></param>
         private static LoggerConfiguration ConfigureEventLogSink(this LoggerConfiguration loggerConfiguration)
         {
-#if NETSTANDARD2_0
+#if NET
             var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #else
             var isWindows = true;

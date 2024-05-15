@@ -158,7 +158,7 @@ namespace NewRelic.Agent.Core.Config
         private static string TryGetAgentConfigFileFromAppConfig()
         {
 
-#if NETSTANDARD2_0
+#if NET
 
             try
             {
