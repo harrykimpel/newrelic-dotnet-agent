@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <codecvt>
 
 #ifdef PAL_STDCPP_COMPAT
 #include "UnixSystemCalls.h"
@@ -188,7 +189,7 @@ namespace NewRelic { namespace Profiler {
                 HRESULT corProfilerInfoInitResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo4), (void**)&_corProfilerInfo4);
                 if (FAILED(corProfilerInfoInitResult)) {
                     // Since MinimumDotnetVersionCheck already queried for minimum required interface, this check is just for safety
-                    LogError(_X("Error initializing CLR profiler info: "), corProfilerInfoInitResult);
+                    LogError(L"Error initializing CLR profiler info: ", corProfilerInfoInitResult);
                     return CORPROF_E_PROFILER_CANCEL_ACTIVATION;
                 }
 
@@ -198,12 +199,12 @@ namespace NewRelic { namespace Profiler {
                     &runtimeInfo->runtimeType, &runtimeInfo->majorVersion, &runtimeInfo->minorVersion, nullptr, nullptr, 0, nullptr, nullptr);
 
                 if (FAILED(runtimeInfoResult)) {
-                    LogError(_X("Error retrieving runtime information: "), runtimeInfoResult);
+                    LogError(L"Error retrieving runtime information: ", runtimeInfoResult);
                     return CORPROF_E_PROFILER_CANCEL_ACTIVATION;
                 }
 
                 if (!SetClrType(runtimeInfo)) {
-                    LogError(_X("Unknown Runtime Type found: "), runtimeInfo->runtimeType);
+                    LogError(L"Unknown Runtime Type found: ", runtimeInfo->runtimeType);
                     return CORPROF_E_PROFILER_CANCEL_ACTIVATION;
                 }
 
@@ -247,7 +248,8 @@ namespace NewRelic { namespace Profiler {
                     return corePathInitResult;
                 }
 
-                auto instrumentationConfiguration = InitializeInstrumentationConfig();
+                auto instrumentationConfiguration = InitializeInstrumentationConfig(configuration->GetIgnoreInstrumentationList());
+                instrumentationConfiguration->CheckForEnvironmentInstrumentationPoint();
                 auto methodRewriter = std::make_shared<MethodRewriter::MethodRewriter>(instrumentationConfiguration, _agentCoreDllPath);
                 this->SetMethodRewriter(methodRewriter);
 
@@ -410,7 +412,7 @@ namespace NewRelic { namespace Profiler {
                 CComPtr<ICorProfilerInfo8> temp;
                 HRESULT result = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo11), (void**)&temp);
                 if (FAILED(result)) {
-                    LogError(_X(".NET Core 3.1 or greater required. Profiler not attaching."));
+                    LogError(L".NET Core 3.1 or greater required. Profiler not attaching.");
                     return CORPROF_E_PROFILER_CANCEL_ACTIVATION;
                 }
                 return S_OK;
@@ -420,7 +422,7 @@ namespace NewRelic { namespace Profiler {
                 CComPtr<ICorProfilerInfo4> temp;
                 HRESULT interfaceCheckResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo7), (void**)&temp);
                 if (FAILED(interfaceCheckResult)) {
-                    LogError(_X(".NET Framework 4.6.1 is required.  Detaching New Relic profiler."));
+                    LogError(L".NET Framework 4.6.1 is required.  Detaching New Relic profiler.");
                     return CORPROF_E_PROFILER_CANCEL_ACTIVATION;
                 }
 
@@ -616,19 +618,38 @@ namespace NewRelic { namespace Profiler {
         {
             LogTrace("Enter: ", __func__);
 
+            // Just refresh the instrumentation using the previous ignore list because the profiler was not notified that it changed
+            return InstrumentationRefreshWithNewIgnoreList(nullptr);
+        }
+
+        HRESULT InstrumentationRefreshWithNewIgnoreList(Configuration::IgnoreInstrumentationListPtr newIgnoreInstrumentationList)
+        {
+            LogTrace("Enter: ", __func__);
+
+            // We use a mutex in this function because an instrumentation refresh can be triggered for multiple reasons
+            // around the same time and we need the correct ignore list to be applied.
+            std::lock_guard<std::mutex> lock(_instrumentationRefreshMutex);
+
             auto instrumentationXmls = GetInstrumentationXmlsFromDisk(_systemCalls);
             auto customXml = _customInstrumentation.GetCustomInstrumentationXml();
             for (auto xmlPair : *customXml) {
                 (*instrumentationXmls)[xmlPair.first] = xmlPair.second;
             }
 
-            auto instrumentationConfiguration = std::make_shared<Configuration::InstrumentationConfiguration>(instrumentationXmls);
+            auto oldMethodRewriter = GetMethodRewriter();
+            auto oldIgnoreList = oldMethodRewriter->GetInstrumentationConfiguration()->GetIgnoreList();
+
+            if (newIgnoreInstrumentationList == nullptr) {
+                // If we were not given a new Ignore list, we should use the previous one because it has not changed.
+                newIgnoreInstrumentationList = oldIgnoreList;
+            }
+
+            auto instrumentationConfiguration = std::make_shared<Configuration::InstrumentationConfiguration>(instrumentationXmls, newIgnoreInstrumentationList, _systemCalls);
             if (instrumentationConfiguration->GetInvalidFileCount() > 0) {
                 LogError(L"Unable to parse one or more instrumentation files.  Instrumentation will not be refreshed.");
                 return S_FALSE;
             }
 
-            auto oldMethodRewriter = GetMethodRewriter();
             auto oldInstrumentationPoints = oldMethodRewriter->GetInstrumentationConfiguration()->GetInstrumentationPoints();
 
             SetMethodRewriter(std::make_shared<MethodRewriter::MethodRewriter>(instrumentationConfiguration, _agentCoreDllPath));
@@ -644,6 +665,15 @@ namespace NewRelic { namespace Profiler {
             LogTrace("Leave: ", __func__);
 
             return S_OK;
+        }
+
+        HRESULT ReloadConfiguration()
+        {
+            LogTrace(L"Enter: ", __func__);
+
+            auto newConfiguration = InitializeConfigAndSetLogLevel();
+
+            return InstrumentationRefreshWithNewIgnoreList(newConfiguration->GetIgnoreInstrumentationList());
         }
 
         std::shared_ptr<std::set<mdMethodDef>> GetMethodDefsForAssembly(
@@ -839,6 +869,7 @@ namespace NewRelic { namespace Profiler {
         std::shared_ptr<FunctionResolver> _functionResolver;
         MethodRewriter::CustomInstrumentationBuilder _customInstrumentationBuilder;
         MethodRewriter::CustomInstrumentation _customInstrumentation;
+        std::mutex _instrumentationRefreshMutex;
 
         DWORD _eventMask = OverrideEventMask(
             COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_MONITOR_MODULE_LOADS | COR_PRF_USE_PROFILE_IMAGES | COR_PRF_MONITOR_THREADS | COR_PRF_ENABLE_STACK_SNAPSHOT | COR_PRF_ENABLE_REJIT | (DWORD)COR_PRF_DISABLE_ALL_NGEN_IMAGES);
@@ -1091,6 +1122,8 @@ namespace NewRelic { namespace Profiler {
                     xstring_t logfilename(nrlog::DefaultFileLogLocation(_systemCalls).GetPathAndFileName());
                     std::string wlogfilename(std::begin(logfilename), std::end(logfilename));
                     nrlog::StdLog.get_dest().open(wlogfilename);
+                    // Imbue with locale and codecvt facet is used to allow the log file to write non-ascii chars to the log
+                    nrlog::StdLog.get_dest().imbue(std::locale(std::locale::classic(), new std::codecvt_utf8<wchar_t>));
                     nrlog::StdLog.get_dest().exceptions(std::wostream::failbit | std::wostream::badbit);
                     LogInfo("Logger initialized.");
                 }
@@ -1128,10 +1161,10 @@ namespace NewRelic { namespace Profiler {
             return configuration;
         }
 
-        std::shared_ptr<Configuration::InstrumentationConfiguration> InitializeInstrumentationConfig()
+        std::shared_ptr<Configuration::InstrumentationConfiguration> InitializeInstrumentationConfig(NewRelic::Profiler::Configuration::IgnoreInstrumentationListPtr ignoreList)
         {
             auto instrumentationXmls = GetInstrumentationXmlsFromDisk(_systemCalls);
-            auto instrumentationConfiguration = std::make_shared<Configuration::InstrumentationConfiguration>(instrumentationXmls);
+            auto instrumentationConfiguration = std::make_shared<Configuration::InstrumentationConfiguration>(instrumentationXmls, ignoreList, _systemCalls);
             if (instrumentationConfiguration->GetInvalidFileCount() > 0) {
                 LogWarn(L"Unable to parse one or more instrumentation files.  Live instrumentation reloading will not work until the unparsable file(s) are corrected or removed.");
             }
@@ -1310,7 +1343,8 @@ namespace NewRelic { namespace Profiler {
         }
     };
 
-    // called by managed code to get function information from function IDs
+    // Called by managed code to get the profiler to update the which methods
+    // are instrumented at runtime.
     extern "C" __declspec(dllexport) HRESULT __cdecl InstrumentationRefresh()
     {
         LogInfo("Refreshing instrumentation");
@@ -1320,6 +1354,19 @@ namespace NewRelic { namespace Profiler {
             return E_FAIL;
         }
         return profiler->InstrumentationRefresh();
+    }
+
+    // Called by managed code to get the profiler to reload configuration settings
+    // from the newrelic.config files.
+    extern "C" __declspec(dllexport) HRESULT __cdecl ReloadConfiguration()
+    {
+        LogInfo(L"Reloading newrelic.config files.");
+        auto profiler = CorProfilerCallbackImpl::GetSingletonish();
+        if (profiler == nullptr) {
+            LogError(L"Unable to reload newrelic.config files because the profiler reference is invalid.");
+            return E_FAIL;
+        }
+        return profiler->ReloadConfiguration();
     }
 
     extern "C" __declspec(dllexport) HRESULT __cdecl AddCustomInstrumentation(const char* fileName, const char* xml)

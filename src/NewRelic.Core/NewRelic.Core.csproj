@@ -9,11 +9,20 @@
     <IntermediateOutputPath>$(MSBuildThisFileDirectory)\..\_build\$(Platform)-$(Configuration)\$(AssemblyName)\</IntermediateOutputPath>
     <OutputPath>$(MSBuildThisFileDirectory)\..\_build\$(Platform)-$(Configuration)\$(AssemblyName)\</OutputPath>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration'=='Debug'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="ILRepack" Version="2.0.16" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="ILRepack" Version="2.0.33">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="4.6.0" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -52,11 +61,11 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <ILRepackCommand>"$(ILRepack)" --parallel --internalize --norepackres --keepotherversionreferences --keyfile:"$(AssemblyOriginatorKeyFile)" --lib:"$(ILRepackSearchDirOutputPath)" --out:"$(OutputPath)..\$(TargetFramework)-ILRepacked\$(AssemblyName).dll" "$(TargetPath)" "@(ILRepackInclude, '" "')"</ILRepackCommand>
+      <ILRepackCommand>"$(ILRepack)" /parallel /internalize /norepackres /keepotherversionreferences /keyfile:"$(AssemblyOriginatorKeyFile)" /lib:"$(ILRepackSearchDirOutputPath)" /out:"$(OutputPath)..\$(TargetFramework)-ILRepacked\$(AssemblyName).dll" "$(TargetPath)" "@(ILRepackInclude, '" "')"</ILRepackCommand>
     </PropertyGroup>
 
     <Message Importance="High" Text="Executing ILRepack.exe for $(TargetFramework) build: $(ILRepackCommand)" />
     <Exec Command="$(ILRepackCommand)" />
   </Target>
-
+  
 </Project>

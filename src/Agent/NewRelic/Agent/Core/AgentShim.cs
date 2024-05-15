@@ -21,10 +21,10 @@ namespace NewRelic.Agent.Core
         }
 
 #if NET
-		static AgentShim()
-		{
-			Initialize();
-		}
+        static AgentShim()
+        {
+            Initialize();
+        }
 #else
         private static bool _initialized = false;
         private static object _initLock = new object();
@@ -49,6 +49,7 @@ namespace NewRelic.Agent.Core
         private static HashSet<string> _deferInitializationOnTheseMethods = new HashSet<string>
         {
             "System.Net.Http.HttpClient.SendAsync",
+            "System.Net.Http.SocketsHttpHandler.SendAsync",
             "System.Net.HttpWebRequest.SerializeHeaders",
             "System.Net.HttpWebRequest.GetResponse"
         };
@@ -325,7 +326,10 @@ namespace NewRelic.Agent.Core
 
     /// <summary>
     /// Used to stop re-entry into the agent via AgentShim entry points when the call stack contains agent code already.
-    /// The profiler stops reentry of GetTracer/FinishTracer twice in the same call stack, but it doesn't stop the agent from spinning up a background thread and then entering the agent from that thread.  To resolve this, anytime a new thread is spun up (via any mechanism including async, Timer, Thread, ThreadPool, etc.) the work inside it needs to be wrapped in using (new IgnoreWork()) as a way of telling AgentShim to not re-enter.
+    /// The profiler stops reentry of GetTracer/FinishTracer twice in the same call stack, but it doesn't stop the agent
+    /// from spinning up a background thread and then entering the agent from that thread.  To resolve this, anytime a
+    /// new thread is spun up (via any mechanism including async, Timer, Thread, ThreadPool, etc.) the work inside it
+    /// needs to be wrapped in using (new IgnoreWork()) as a way of telling AgentShim to not re-enter.
     /// </summary>
     public class IgnoreWork : IDisposable
     {
