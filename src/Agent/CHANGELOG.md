@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.25.1](https://github.com/newrelic/newrelic-dotnet-agent/compare/v10.25.0...v10.25.1) (2024-06-04)
+
+
+### Fixes
+
+* Agent license key should be optional in Serverless mode. ([#2499](https://github.com/newrelic/newrelic-dotnet-agent/issues/2499)) ([#2500](https://github.com/newrelic/newrelic-dotnet-agent/issues/2500)) ([801edc3](https://github.com/newrelic/newrelic-dotnet-agent/commit/801edc32a01dbc62a449963a41899ca68f987e78))
+* Nested logging contexts should not disable context data for Microsoft.Extensions.Logging (2508) ([#2516](https://github.com/newrelic/newrelic-dotnet-agent/issues/2516)) ([6196af5](https://github.com/newrelic/newrelic-dotnet-agent/commit/6196af5a8f13b4c1e3bd7f315837c8b365fdb57a))
+
+## [10.25.0](https://github.com/newrelic/newrelic-dotnet-agent/compare/v10.24.0...v10.25.0) (2024-05-21)
+
+
+### New features
+
+* Add support for AWS Lambda `APIGatewayHttpApiV2ProxyRequest` ([#2472](https://github.com/newrelic/newrelic-dotnet-agent/issues/2472)) ([3f06bf6](https://github.com/newrelic/newrelic-dotnet-agent/commit/3f06bf6a95465c37ee141c566b501d290e62d1fc))
+* Enable configuration of ignored and expected HTTP status code errors with environment variables ([#2487](https://github.com/newrelic/newrelic-dotnet-agent/issues/2487)) ([eeb574f](https://github.com/newrelic/newrelic-dotnet-agent/commit/eeb574f3adfa1d90fcf39cd68b11e936d28292b4))
+
+
+### Fixes
+
+* Accept inbound tracing headers in Kafka consume method instrumentation ([#2488](https://github.com/newrelic/newrelic-dotnet-agent/issues/2488)) ([476378a](https://github.com/newrelic/newrelic-dotnet-agent/commit/476378aaddb58da22de3cbe30ce0cf778973fe5a))
+* Upgrade Wix to v5 to fix an issue with non-elevated installs. ([#2471](https://github.com/newrelic/newrelic-dotnet-agent/issues/2471)) ([acd12fa](https://github.com/newrelic/newrelic-dotnet-agent/commit/acd12fae2b2bd4af6a1b29cb5574ea7e4513b870))
+
 ## [10.24.0](https://github.com/newrelic/newrelic-dotnet-agent/compare/v10.23.1...v10.24.0) (2024-05-07)
 
 

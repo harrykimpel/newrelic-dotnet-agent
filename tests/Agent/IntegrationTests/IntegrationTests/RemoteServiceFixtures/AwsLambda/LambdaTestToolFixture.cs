@@ -14,6 +14,7 @@ namespace NewRelic.Agent.IntegrationTests.RemoteServiceFixtures.AwsLambda
     public class LambdaTestToolFixture : RemoteApplicationFixture
     {
         public DotnetTool LambdaTestTool { get; set; }
+        public Action AdditionalSetupConfiguration { get; set; }
 
         public LambdaTestToolFixture(RemoteApplication remoteApplication, string newRelicLambdaHandler, string lambdaHandler, string lambdaName, string lambdaVersion, string lambdaExecutionEnvironment) : base(remoteApplication)
         {
@@ -32,7 +33,7 @@ namespace NewRelic.Agent.IntegrationTests.RemoteServiceFixtures.AwsLambda
                     SetAdditionalEnvironmentVariable("NEW_RELIC_ACCOUNT_ID", TestConfiguration.NewRelicAccountId);
                     SetAdditionalEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{LambdaTestTool.Port}");
 
-                    AddAdditionalEnvironmentVariableIfNotNull("NEW_RELIC_LAMBDA_FUNCTION_HANDLER", newRelicLambdaHandler);
+                    AddAdditionalEnvironmentVariableIfNotNull("NEW_RELIC_LAMBDA_HANDLER", newRelicLambdaHandler);
                     AddAdditionalEnvironmentVariableIfNotNull("_HANDLER", lambdaHandler);
                     AddAdditionalEnvironmentVariableIfNotNull("AWS_LAMBDA_FUNCTION_NAME", lambdaName);
                     AddAdditionalEnvironmentVariableIfNotNull("AWS_LAMBDA_FUNCTION_VERSION", lambdaVersion);
@@ -40,6 +41,8 @@ namespace NewRelic.Agent.IntegrationTests.RemoteServiceFixtures.AwsLambda
 
                     // Finest level logs are necessary to read the uncompressed payloads from the agent logs
                     remoteApplication.NewRelicConfig.SetLogLevel("finest");
+
+                    AdditionalSetupConfiguration?.Invoke();
 
                     if (LambdaTestTool.IsRunning)
                     {
