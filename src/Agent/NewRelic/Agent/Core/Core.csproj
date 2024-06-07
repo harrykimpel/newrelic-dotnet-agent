@@ -1,6 +1,6 @@
 <Project  Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net462;net6.0</TargetFrameworks>
+    <TargetFrameworks>net462;net8.0</TargetFrameworks>
     <AssemblyName>NewRelic.Agent.Core</AssemblyName>
     <RootNamespace>NewRelic.Agent.Core</RootNamespace>
     <Description></Description>
@@ -19,7 +19,7 @@
     <DefineConstants>TRACE;LEGACY_GRPC</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
@@ -70,7 +70,7 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="Autofac" Version="7.1.0" />
     <!-- .NET Core can use the modern gRPC library -->
     <PackageReference Include="Grpc.Net.Client" Version="2.63.0" />
@@ -126,7 +126,7 @@
       <ILRepackInclude Include="@(PossibleRefsForILRepack)" Condition="'%(FileName)' == 'System.ValueTuple'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
       <ILRepackInclude Include="@(PossibleRefsForILRepack)" Condition="'%(FileName)' == 'Microsoft.Extensions.Configuration'" />
       <ILRepackInclude Include="@(PossibleRefsForILRepack)" Condition="'%(FileName)' == 'Microsoft.Extensions.Configuration.Abstractions'" />
       <ILRepackInclude Include="@(PossibleRefsForILRepack)" Condition="'%(FileName)' == 'Microsoft.Extensions.Configuration.FileExtensions'" />
@@ -145,7 +145,7 @@
 
     <PropertyGroup>
       <ILRepackIncludeCount Condition="'$(TargetFramework)' == 'net462'">20</ILRepackIncludeCount>
-      <ILRepackIncludeCount Condition="'$(TargetFramework)' == 'net6.0'">24</ILRepackIncludeCount>
+      <ILRepackIncludeCount Condition="'$(TargetFramework)' == 'net8.0'">23</ILRepackIncludeCount>
     </PropertyGroup>
 
     <Error Text="ILRepack of $(AssemblyName) ($(TargetFramework)) failed. A dependency is missing. Expected $(ILRepackIncludeCount) dependencies but found @(ILRepackInclude-&gt;Count())." Condition="@(ILRepackInclude-&gt;Count()) != $(ILRepackIncludeCount)" />
@@ -165,7 +165,7 @@
       <ILRepackCommand>"$(ILRepack)" /parallel /internalize /norepackres /keepotherversionreferences /keyfile:"$(AssemblyOriginatorKeyFile)" /lib:"$(ILRepackSearchDirOutputPath)" /out:"$(OutputPath)..\$(TargetFramework)-ILRepacked\$(AssemblyName).dll" "$(TargetPath)" "@(ILRepackInclude, '" "')"</ILRepackCommand>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
       <ILRepackCommand>"$(ILRepack)" /verbose /parallel /internalize /norepackres /keepotherversionreferences /keyfile:"$(AssemblyOriginatorKeyFile)" /lib:"%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(TargetFramework)" /lib:"$(ILRepackSearchDirOutputPath)" /out:"$(OutputPath)..\$(TargetFramework)-ILRepacked\$(AssemblyName).dll" "$(TargetPath)" "@(ILRepackInclude, '" "')"</ILRepackCommand>
     </PropertyGroup>
 

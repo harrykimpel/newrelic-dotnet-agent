@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NewRelic.Agent.Api;
 using NewRelic.Agent.Extensions.Providers.Wrapper;
 
-namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
+namespace NewRelic.Providers.Wrapper.AspNetCore8Plus
 {
     public class GenericHostWebHostBuilderExtensionsWrapper6Plus : IWrapper
     {

@@ -20,7 +20,9 @@ namespace NewRelic.Agent.Core.Extension
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true, Namespace="urn:newrelic-extension")]
     [System.Xml.Serialization.XmlRootAttribute(Namespace="urn:newrelic-extension", IsNullable=false)]
+#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
     public partial class extension
+#pragma warning restore CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
     {
         
         private List<extensionTracerFactory> instrumentationField;

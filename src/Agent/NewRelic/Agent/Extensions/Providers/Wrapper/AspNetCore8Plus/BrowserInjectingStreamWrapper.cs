@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using NewRelic.Agent.Api;
 using NewRelic.Agent.Extensions.Logging;
 
-namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
+namespace NewRelic.Providers.Wrapper.AspNetCore8Plus
 {
     /// <summary>
     /// Stream wrapper that handles injecting the browser script as appropriate

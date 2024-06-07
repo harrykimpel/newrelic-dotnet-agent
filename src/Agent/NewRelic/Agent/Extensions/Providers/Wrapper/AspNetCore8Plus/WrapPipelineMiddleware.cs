@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using NewRelic.Agent.Api;
 using NewRelic.Agent.Extensions.Providers.Wrapper;
 
-namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
+namespace NewRelic.Providers.Wrapper.AspNetCore8Plus
 {
     /// <summary>
     /// This middleware is intended to be injected as the first executed item 
@@ -214,7 +214,7 @@ namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
                 {
                     if (header.Key != null && header.Value != null)
                     {
-                        httpContext.Response.Headers.Add(header.Key, header.Value);
+                        httpContext.Response.Headers[header.Key] = header.Value;
                     }
                 }
             }

@@ -10,7 +10,7 @@ using NewRelic.Agent.Api.Experimental;
 using NewRelic.Agent.Extensions.Providers.Wrapper;
 using NewRelic.Reflection;
 
-namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
+namespace NewRelic.Providers.Wrapper.AspNetCore8Plus
 {
     public class InvokeActionMethodAsyncWrapper6Plus : IWrapper
     {

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using NewRelic.Agent.Api;
 
-namespace NewRelic.Providers.Wrapper.AspNetCore6Plus
+namespace NewRelic.Providers.Wrapper.AspNetCore8Plus
 {
 
     /// <summary>

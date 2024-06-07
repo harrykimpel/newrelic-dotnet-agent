@@ -23,7 +23,9 @@ namespace NewRelic.Agent.Core.Config
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true, Namespace="urn:newrelic-config")]
     [System.Xml.Serialization.XmlRootAttribute(Namespace="urn:newrelic-config", IsNullable=false)]
+#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
     public partial class configuration
+#pragma warning restore CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
     {
         
         private configurationService serviceField;

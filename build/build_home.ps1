@@ -62,21 +62,21 @@ foreach ($wrapperDir in $wrapperDirs) {
         $netFrameworkWrapperHash.Add($dllObject, $xmlObject)
     }
 
-	if ($netpath = Resolve-Path "$wrapperDirPath\bin\$Configuration\net6*") {
+	if ($netpath = Resolve-Path "$wrapperDirPath\bin\$Configuration\net8*") {
 	    $dllObject = Get-ChildItem -File -Path "$netpath" -Filter NewRelic.Providers.Wrapper.$wrapperName.dll
 		$xmlObject = Get-ChildItem -File -Path "$netpath" -Filter Instrumentation.xml
 		$netWrapperHash.Add($dllObject, $xmlObject)
 	}
 }
 
-# aspnetcore is built targeting netstandard2.0 and net6. We need the netstandard2.0 target included with the netframework build
+# aspnetcore is built targeting netstandard2.0 and net8. We need the netstandard2.0 target included with the netframework build
 if ($aspnetcorepath = resolve-path "$wrappersrootdir\aspnetcore\bin\$configuration\netstandard2.0") {
     $dllobject = get-childitem -file -path "$aspnetcorepath" -filter newrelic.providers.wrapper.aspnetcore.dll
     $xmlobject = get-childitem -file -path "$aspnetcorepath" -filter instrumentation.xml
     $netframeworkwrapperhash.add($dllobject, $xmlobject)
 }
 
-# microsoftextensionslogging is built targeting netstandard2.0 and net6. We need the netstandard2.0 target included with the netframework build
+# microsoftextensionslogging is built targeting netstandard2.0 and net8. We need the netstandard2.0 target included with the netframework build
 if ($melnetcorepath = resolve-path "$wrappersrootdir\microsoftextensionslogging\bin\$configuration\netstandard2.0") {
     $dllobject = get-childitem -file -path "$melnetcorepath" -filter newrelic.providers.wrapper.microsoftextensionslogging.dll
     $xmlobject = get-childitem -file -path "$melnetcorepath" -filter instrumentation.xml
@@ -96,7 +96,7 @@ foreach ($storageDir in $storageDirs) {
         $netFrameworkStorageArray += $dllObject
     }
 
-    if ($netpath = Resolve-Path "$storageDirPath\bin\$Configuration\net6*") {
+    if ($netpath = Resolve-Path "$storageDirPath\bin\$Configuration\net8*") {
         $dllObject = Get-ChildItem -File -Path "$netpath" -Filter NewRelic.Providers.Storage.$storageName.dll
         $netStorageArray += $dllObject
     }

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>NewRelic.Providers.Wrapper.AwsLambda</AssemblyName>
     <RootNamespace>NewRelic.Providers.Wrapper.AwsLambda</RootNamespace>
     <Description>AWS Lambda Wrapper Provider for New Relic .NET Agent</Description>

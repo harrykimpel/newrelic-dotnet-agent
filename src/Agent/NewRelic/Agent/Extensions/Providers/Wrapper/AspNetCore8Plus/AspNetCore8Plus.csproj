@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>NewRelic.Providers.Wrapper.AspNetCore6Plus</AssemblyName>
-    <RootNamespace>NewRelic.Providers.Wrapper.AspNetCore6Plus</RootNamespace>
-    <Description>ASP.NET Core 6+ Wrapper Provider for New Relic .NET Agent</Description>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>NewRelic.Providers.Wrapper.AspNetCore8Plus</AssemblyName>
+    <RootNamespace>NewRelic.Providers.Wrapper.AspNetCore8Plus</RootNamespace>
+    <Description>ASP.NET Core 8+ Wrapper Provider for New Relic .NET Agent</Description>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
