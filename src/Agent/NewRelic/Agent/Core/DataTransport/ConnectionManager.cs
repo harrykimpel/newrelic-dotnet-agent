@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace NewRelic.Agent.Core.DataTransport
 {
@@ -36,7 +37,8 @@ namespace NewRelic.Agent.Core.DataTransport
         private readonly IScheduler _scheduler;
         private int _connectionAttempt = 0;
         private bool _started;
-        private readonly object _syncObject = new object();
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
+
         private bool _runtimeConfigurationUpdated = false;
 
         public ConnectionManager(IConnectionHandler connectionHandler, IScheduler scheduler)
@@ -68,7 +70,8 @@ namespace NewRelic.Agent.Core.DataTransport
             if (_started)
                 return;
 
-            lock (_syncObject)
+            _lock.EnterWriteLock();
+            try
             {
                 // Second, a thread-safe check inside the blocking code block that ensures we'll never start more than once
                 if (_started)
@@ -81,16 +84,25 @@ namespace NewRelic.Agent.Core.DataTransport
 
                 _started = true;
             }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
         private void Connect()
         {
             try
             {
-                lock (_syncObject)
+                _lock.EnterWriteLock();
+                try
                 {
                     _runtimeConfigurationUpdated = false;
                     _connectionHandler.Connect();
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
                 }
 
                 // If the runtime configuration has changed, the app names have updated, so we schedule a restart
@@ -143,9 +155,14 @@ namespace NewRelic.Agent.Core.DataTransport
 
         private void Disconnect()
         {
-            lock (_syncObject)
+            _lock.EnterWriteLock();
+            try
             {
                 _connectionHandler.Disconnect();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
@@ -153,18 +170,28 @@ namespace NewRelic.Agent.Core.DataTransport
         {
             EventBus<StopHarvestEvent>.Publish(new StopHarvestEvent());
 
-            lock (_syncObject)
+            _lock.EnterWriteLock();
+            try
             {
                 Disconnect();
                 Connect();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
         public T SendDataRequest<T>(string method, params object[] data)
         {
-            lock (_syncObject)
+            _lock.EnterReadLock();
+            try
             {
                 return _connectionHandler.SendDataRequest<T>(method, data);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
             }
         }
 
