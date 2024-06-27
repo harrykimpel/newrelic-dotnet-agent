@@ -6,12 +6,19 @@ using NewRelic.Agent.IntegrationTests.Shared.ReflectionHelpers;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace MultiFunctionApplicationHelpers
 {
     public static class MultiFunctionApplication
     {
+        private static TcpListener _tcpListener;
+        private static TcpClient _client;
+        private static NetworkStream _stream;
+        public static bool EnableSocketListener { get; set; }
+
         public static void Execute(string[] args)
         {
             var methodExecutor = new DynamicMethodExecutor();
@@ -22,12 +29,16 @@ namespace MultiFunctionApplicationHelpers
             Console.WriteLine($"Process Info: {Process.GetCurrentProcess().ProcessName} {Process.GetCurrentProcess().Id}");
             Console.WriteLine($"Keep Alive on Error: {keepAliveOnError}");
             Console.WriteLine();
+            if (EnableSocketListener)
+            {
+                StartSocketListener(args);
+            }
 
             while (!shouldExit)
             {
                 Console.Write($"{DateTime.Now.ToLongTimeString()} >");
-                var command = Console.ReadLine();
-                    
+                var command = GetCommand();
+
                 if (string.IsNullOrWhiteSpace(command))
                 {
                     // Delay checking for next command for when there's a delay
@@ -64,10 +75,17 @@ namespace MultiFunctionApplicationHelpers
                 if (command.Equals("help", StringComparison.OrdinalIgnoreCase) || command.Equals("usage", StringComparison.OrdinalIgnoreCase) || command.Equals("?"))
                 {
                     PrintUsage();
+                    SendTerminatorToSocket();
                     continue;
                 }
 
                 ExecuteCommand(methodExecutor, keepAliveOnError, command);
+                SendTerminatorToSocket();
+            }
+
+            if (EnableSocketListener)
+            {
+                _tcpListener.Stop();
             }
 
             Console.WriteLine("Reached end of Execute(args)");
@@ -78,7 +96,7 @@ namespace MultiFunctionApplicationHelpers
             ConsoleMFLogger.Info($"EXECUTING: '{commandText}'");
 
             var args = commandText.Split(' ');
-            
+
             if (args.Count() < 2)
             {
                 ConsoleMFLogger.Error($"INVALID FORMAT: '{commandText}'");
@@ -179,6 +197,48 @@ namespace MultiFunctionApplicationHelpers
             ConsoleMFLogger.Info();
         }
 
+        private static void StartSocketListener(string[] args)
+        {
+            // TODO: get the port from the command line args
+            var port = 8123;
 
+            IPEndPoint iPEndpoint = new IPEndPoint(IPAddress.Any, port);
+
+            Console.WriteLine($"Starting TCP Listener on  port {port}");
+            _tcpListener = new TcpListener(iPEndpoint);
+            _tcpListener.Start();
+
+            Console.WriteLine("Waiting for a connection...");
+            _client = _tcpListener.AcceptTcpClient();
+            _stream = _client.GetStream();
+        }
+
+        private static string GetCommand()
+        {
+            if (!EnableSocketListener)
+                return Console.ReadLine();
+
+            // wait indefinitely for a command to be received
+            byte[] buffer = new byte[1024];
+            int bytesReceived = _stream.Read(buffer, 0, buffer.Length);
+            return System.Text.Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+        }
+
+        public static void SendToSocket(string msg) 
+        {
+            if (!EnableSocketListener)
+                return;
+
+            byte[] msgBytes = System.Text.Encoding.ASCII.GetBytes(msg);
+            _stream.Write(msgBytes, 0, msgBytes.Length);
+        }
+        public static void SendTerminatorToSocket() 
+        {
+            if (!EnableSocketListener)
+                return;
+
+            byte[] msgBytes = System.Text.Encoding.ASCII.GetBytes("~END~");
+            _stream.Write(msgBytes, 0, msgBytes.Length);
+        }
     }
 }

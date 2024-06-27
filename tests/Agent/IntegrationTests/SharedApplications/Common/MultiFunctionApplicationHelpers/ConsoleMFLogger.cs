@@ -22,7 +22,12 @@ namespace MultiFunctionApplicationHelpers
         {
             foreach (var msg in message)
             {
-                Console.WriteLine($"{LogTs} tid:{Tid} {msg}");
+                var logMsg = $"{LogTs} tid:{Tid} {msg}";
+
+                if (MultiFunctionApplication.EnableSocketListener)
+                    MultiFunctionApplication.SendToSocket(logMsg+Environment.NewLine);
+
+                Console.WriteLine(logMsg);
             }
         }
 
@@ -35,7 +40,12 @@ namespace MultiFunctionApplicationHelpers
         {
             foreach (var msg in message)
             {
-                Console.Error.WriteLine($"{LogTs} tid:{Tid} {msg}");
+                var logMsg = $"{LogTs} tid:{Tid} {msg}";
+
+                if (MultiFunctionApplication.EnableSocketListener)
+                    MultiFunctionApplication.SendToSocket(logMsg+Environment.NewLine);
+
+                Console.Error.WriteLine(logMsg);
             }
         }
 
