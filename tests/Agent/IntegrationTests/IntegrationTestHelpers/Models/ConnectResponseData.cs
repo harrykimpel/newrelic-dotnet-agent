@@ -9,6 +9,9 @@ namespace NewRelic.Agent.IntegrationTestHelpers.Models
 {
     public class ConnectResponseData
     {
+        [JsonProperty("js_agent_loader")]
+        public string JsAgentLoader { get; set; }
+
         [JsonProperty("agent_run_id")]
         public string AgentRunId { get; set; }
 

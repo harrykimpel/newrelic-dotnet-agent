@@ -9,6 +9,12 @@ namespace NewRelic.Agent.IntegrationTestHelpers
 {
     public class NewRelicConfigModifier
     {
+        public void BrowserMonitoringLoader(string loaderType)
+        {
+            CommonUtils.ModifyOrCreateXmlAttributeInNewRelicConfig(_configFilePath,
+                new[] { "configuration", "browserMonitoring" }, "loader", loaderType);
+        }
+
         private readonly string _configFilePath;
 
         public NewRelicConfigModifier(string configFilePath)

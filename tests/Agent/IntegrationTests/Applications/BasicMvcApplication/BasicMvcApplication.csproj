@@ -110,11 +110,16 @@
     <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
       <Version>2.0.1</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
+      <Version>17.10.48</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="NewRelic.Agent.Api">
       <Version>8.41.1</Version>
     </PackageReference>
     <PackageReference Include="RestSharp">
-      <Version>105.2.3</Version>
+      <Version>106.6.10</Version>
     </PackageReference>
     <PackageReference Include="ServiceStack.Common">
       <Version>4.0.40</Version>

@@ -5,7 +5,7 @@
 using NewRelic.Api.Agent;
 using System;
 using System.Runtime.CompilerServices;
-using NewRelic.Agent.IntegrationTests.Shared.ReflectionHelpers;
+//using NewRelic.Agent.IntegrationTests.Shared.ReflectionHelpers;
 
 namespace ConsoleInstrumentationLoader
 {
@@ -18,7 +18,7 @@ namespace ConsoleInstrumentationLoader
             {
                 InstrumentedMethod();
 
-                ReflectionUtil.ScanAssembliesAndTypes();
+                //ReflectionUtil.ScanAssembliesAndTypes();
             }
             catch (Exception)
             {

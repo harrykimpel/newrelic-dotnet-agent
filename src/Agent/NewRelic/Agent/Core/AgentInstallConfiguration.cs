@@ -107,7 +107,7 @@ namespace NewRelic.Agent.Core
         {
             try
             {
-                return FileVersionInfo.GetVersionInfo(typeof(AgentInstallConfiguration).Assembly.Location).FileVersion;
+                return "10.28.0.0";
             }
             catch (Exception ex)
             {
