@@ -202,9 +202,37 @@ namespace NewRelic.Agent.Core
                 }
             }
             else
+            {
+                if (TryGetAzureFunctionInstallType(out var agentInfo))
+                    return agentInfo;
+
+                if (TryGetLambdaServerlessInstallType(out agentInfo))
+                    return agentInfo;
+
                 Log.Debug($"Could not get agent info from {agentInfoPath}. File does not exist.");
+            }
 
             return null;
+        }
+
+        private static bool TryGetLambdaServerlessInstallType(out AgentInfo agentInfo)
+        {
+            agentInfo = null;
+            if (System.Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null)
+            {
+                agentInfo = new AgentInfo { InstallType = "Lambda" };
+            }
+            return agentInfo != null;
+        }
+
+        private static bool TryGetAzureFunctionInstallType(out AgentInfo agentInfo)
+        {
+            agentInfo = null;
+            if (System.Environment.GetEnvironmentVariable("FUNCTIONS_WORKER_RUNTIME") != null)
+            {
+                agentInfo = new AgentInfo { InstallType = "AzureFunction" };
+            }
+            return agentInfo != null;
         }
     }
 }
