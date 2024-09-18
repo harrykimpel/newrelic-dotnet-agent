@@ -16,7 +16,7 @@ SPDX-License-Identifier: Apache-2.0
         <exactMethodMatcher methodName="PerformStoreAsync" />
 
         <!--Get > TryGet > PerformTryGet-->
-        <!--GetWithCase > TryGetWithCas > PerformTryGet-->
+        <!--GetWithCas > TryGetWithCas > PerformTryGet-->
         <exactMethodMatcher methodName="PerformTryGet" />
 
         <!--Get<T>-->
@@ -26,8 +26,8 @@ SPDX-License-Identifier: Apache-2.0
         <exactMethodMatcher methodName="GetAsync" />
         <exactMethodMatcher methodName="GetAsync`1" />
 
-        <!--Special: Does a get and if needed an add - make leaf!-->
-        <exactMethodMatcher methodName="GetValueOrCreateAsync" />
+        <!--Special: Does a get and if needed an add - make leaf!
+        <exactMethodMatcher methodName="GetValueOrCreateAsync" />-->
 
         <!--Increment, Decrement, CasMutate-->
         <exactMethodMatcher methodName="PerformMutate" parameters="Enyim.Caching.Memcached.MutationMode,System.String,System.UInt64,System.UInt64,System.UInt32,System.UInt64&amp;" />

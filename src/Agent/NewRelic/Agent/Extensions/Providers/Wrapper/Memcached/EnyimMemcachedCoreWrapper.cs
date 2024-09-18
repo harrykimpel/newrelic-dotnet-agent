@@ -25,35 +25,49 @@ namespace NewRelic.Providers.Wrapper.Memcached
         public AfterWrappedMethodDelegate BeforeWrappedMethod(InstrumentedMethodCall instrumentedMethodCall, IAgent agent, ITransaction transaction)
         {
             ParsedSqlStatement parsedStatement;
-
-            agent.Logger.Info($">>>>>Wrapping method {instrumentedMethodCall.MethodCall.Method.MethodName}");
-
             string key;
 
+            // Operation is the first argument in all cases, Key is the second argument
             if (instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformStore")
-                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformStoreAsync"))
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformStoreAsync")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformMutate")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformMutateAsync")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformConcatenate"))
             {
                 key = instrumentedMethodCall.MethodCall.MethodArguments[1].ToString();
                 parsedStatement = new ParsedSqlStatement(DatastoreVendor.Memcached,
                     key,
                     instrumentedMethodCall.MethodCall.MethodArguments[0].ToString());
             }
-            else if (instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformTryGet"))
+            // Operation is always Get, Key is the first argument
+            else if (instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformTryGet")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("PerformGet")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("GetAsync"))
             {
                 key = instrumentedMethodCall.MethodCall.MethodArguments[0].ToString();
                 parsedStatement = new ParsedSqlStatement(DatastoreVendor.Memcached,
                     key,
                     "Get");
             }
+            // Operation is always Remove, Key is the first argument
+            else if (instrumentedMethodCall.MethodCall.Method.MethodName.Equals("Remove")
+                || instrumentedMethodCall.MethodCall.Method.MethodName.Equals("RemoveAsync"))
+            {
+                key = instrumentedMethodCall.MethodCall.MethodArguments[0].ToString();
+                parsedStatement = new ParsedSqlStatement(DatastoreVendor.Memcached,
+                    key,
+                    "Remove");
+            }
+            // Method is not instrumented
             else
             {
                 return Delegates.NoOp;
             }
 
             var connectionInfo = MemcachedHelpers.GetConnectionInfo(
-                    key,
-                    instrumentedMethodCall.MethodCall.InvocationTarget,
-                    agent);
+                key,
+                instrumentedMethodCall.MethodCall.InvocationTarget,
+                agent);
 
             var segment = transaction.StartDatastoreSegment(instrumentedMethodCall.MethodCall, parsedStatement, connectionInfo, isLeaf: true);
             segment.AddCustomAttribute("key", key); // node also stores the key - not required!
