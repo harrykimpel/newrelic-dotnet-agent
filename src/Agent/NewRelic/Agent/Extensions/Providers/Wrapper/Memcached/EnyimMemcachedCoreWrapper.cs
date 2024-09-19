@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using NewRelic.Agent.Api;
 using NewRelic.Agent.Extensions.Parsing;
 using NewRelic.Agent.Extensions.Providers.Wrapper;
@@ -24,6 +25,14 @@ namespace NewRelic.Providers.Wrapper.Memcached
 
         public AfterWrappedMethodDelegate BeforeWrappedMethod(InstrumentedMethodCall instrumentedMethodCall, IAgent agent, ITransaction transaction)
         {
+            if (instrumentedMethodCall.IsAsync)
+            {
+                transaction.AttachToAsync();
+            }
+
+            // Internally, the key is used to determine what server to read from, in a multi-server environment.
+            // Without a key, we can't determine the server, so we can't determine the connection info.
+
             ParsedSqlStatement parsedStatement;
             string key;
 
@@ -58,7 +67,7 @@ namespace NewRelic.Providers.Wrapper.Memcached
                     key,
                     "Remove");
             }
-            // Method is not instrumented
+            // Should not happen
             else
             {
                 return Delegates.NoOp;
@@ -71,6 +80,13 @@ namespace NewRelic.Providers.Wrapper.Memcached
 
             var segment = transaction.StartDatastoreSegment(instrumentedMethodCall.MethodCall, parsedStatement, connectionInfo, isLeaf: true);
             segment.AddCustomAttribute("key", key); // node also stores the key - not required!
+
+            if (instrumentedMethodCall.IsAsync)
+            {
+                return Delegates.GetAsyncDelegateFor<Task>(
+                    agent,
+                    segment);
+            }
 
             return Delegates.GetDelegateFor(
                 onFailure: (ex) => segment.End(ex),

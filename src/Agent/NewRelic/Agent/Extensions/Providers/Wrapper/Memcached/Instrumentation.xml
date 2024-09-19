@@ -17,17 +17,14 @@ SPDX-License-Identifier: Apache-2.0
 
         <!--Get > TryGet > PerformTryGet-->
         <!--GetWithCas > TryGetWithCas > PerformTryGet-->
+        <!--GetWithCas<T> > TryGetWithCas > PerformTryGet-->
         <exactMethodMatcher methodName="PerformTryGet" />
 
         <!--Get<T>-->
         <exactMethodMatcher methodName="PerformGet" />
 
         <!--GetValueAsync-->
-        <exactMethodMatcher methodName="GetAsync" />
-        <exactMethodMatcher methodName="GetAsync`1" />
-
-        <!--Special: Does a get and if needed an add - make leaf!
-        <exactMethodMatcher methodName="GetValueOrCreateAsync" />-->
+        <exactMethodMatcher methodName="GetAsync" parameters="System.String" />
 
         <!--Increment, Decrement, CasMutate-->
         <exactMethodMatcher methodName="PerformMutate" parameters="Enyim.Caching.Memcached.MutationMode,System.String,System.UInt64,System.UInt64,System.UInt32,System.UInt64&amp;" />
@@ -40,10 +37,8 @@ SPDX-License-Identifier: Apache-2.0
         
         <exactMethodMatcher methodName="Remove" />
         <exactMethodMatcher methodName="RemoveAsync" />
-        
       </match>
     </tracerFactory>
-
 
   </instrumentation>
 </extension>
